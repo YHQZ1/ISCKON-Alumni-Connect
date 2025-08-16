@@ -13,9 +13,8 @@ import {
   Sparkles,
   BookOpen,
   Shield,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Landing = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,9 +25,9 @@ const Landing = () => {
   const observerRef = useRef();
   const carouselRef = useRef(null);
   const animationRef = useRef(null);
-  const [carouselSpeed] = useState(0.1); // Adjust speed here (lower is faster)
+  const [carouselSpeed] = useState(0.1);
+  const navigate = useNavigate();
 
-  // Enhanced mouse tracking for parallax effects
   useEffect(() => {
     const updateMousePosition = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -37,7 +36,6 @@ const Landing = () => {
     return () => window.removeEventListener("mousemove", updateMousePosition);
   }, []);
 
-  // Intersection Observer for scroll animations
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -60,7 +58,6 @@ const Landing = () => {
     };
   }, []);
 
-  // Auto testimonial rotation with pause on hover
   useEffect(() => {
     if (!isAutoPlaying) return;
     const timer = setInterval(() => {
@@ -168,24 +165,21 @@ const Landing = () => {
     console.log("Searching for:", searchQuery);
   };
 
-  // Parallax calculation
   const parallaxOffset = (strength = 0.5) => ({
     transform: `translate(${
       (mousePosition.x - window.innerWidth / 2) * strength * 0.01
     }px, ${(mousePosition.y - window.innerHeight / 2) * strength * 0.01}px)`,
   });
 
-  // Infinite circular carousel animation
   useEffect(() => {
     if (!carouselRef.current) return;
 
     const carousel = carouselRef.current;
     const cards = carousel.querySelectorAll(".institution-card");
     const cardWidth = cards[0]?.offsetWidth || 0;
-    const gap = 32; // px-8 = 32px gap
+    const gap = 32;
     const totalWidth = (cardWidth + gap) * cards.length;
 
-    // Clone cards for seamless looping
     cards.forEach((card) => {
       const clone = card.cloneNode(true);
       clone.classList.add("clone");
@@ -202,7 +196,6 @@ const Landing = () => {
 
       position -= delta * carouselSpeed;
 
-      // Reset position when we've scrolled all original cards
       if (position <= -totalWidth) {
         position = 0;
       }
@@ -220,7 +213,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-x-hidden">
-      {/* Enhanced Floating Elements with Parallax */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-orange-200/30 to-amber-200/30 rounded-full blur-xl animate-pulse"
@@ -249,7 +241,6 @@ const Landing = () => {
         ></div>
       </div>
 
-      {/* Enhanced Navigation with Backdrop Blur */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-lg border-b border-slate-200/50 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-6">
           <div className="flex justify-between items-center h-18">
@@ -283,7 +274,10 @@ const Landing = () => {
                   <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-600 to-yellow-600 group-hover:w-full transition-all duration-500"></div>
                 </a>
               ))}
-              <button className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white px-8 py-3 rounded-2xl hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 font-semibold hover:scale-105 transform">
+              <button
+                onClick={() => navigate("/auth")}
+                className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white px-8 py-3 rounded-2xl hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 font-semibold hover:scale-105 transform"
+              >
                 Sign In
               </button>
             </div>
@@ -291,7 +285,6 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Enhanced Hero Section with Staggered Animations */}
       <section
         className="pt-24 pb-32 relative overflow-hidden"
         id="hero"
@@ -403,7 +396,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Stats Section with Counter Animation */}
       <section
         className="py-24 bg-white/80 backdrop-blur-sm border-y border-slate-200/50"
         id="stats"
@@ -445,7 +437,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced How It Works with Staggered Card Animations */}
       <section
         id="how-it-works"
         className="py-24 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50"
@@ -534,7 +525,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Infinite Circular Institutions Carousel */}
       <section
         id="institutions"
         className="py-24 bg-white/80 backdrop-blur-sm"
@@ -565,7 +555,6 @@ const Landing = () => {
             </p>
           </div>
 
-          {/* Infinite Circular Carousel */}
           <div className="relative overflow-hidden">
             <div ref={carouselRef} className="flex w-max gap-8 px-8">
               {featuredInstitutions.map((institution) => (
@@ -618,7 +607,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Testimonials with Smoother Transitions */}
       <section
         className="py-24 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50"
         id="testimonials"
@@ -662,7 +650,6 @@ const Landing = () => {
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500"></div>
 
-              {/* Animated Stars */}
               <div className="flex justify-center mb-8">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -676,7 +663,6 @@ const Landing = () => {
                 ))}
               </div>
 
-              {/* Testimonial Content with Fade Transition */}
               <div className="relative h-64 flex items-center justify-center">
                 {testimonials.map((testimonial, index) => (
                   <div
@@ -705,7 +691,6 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Enhanced Testimonial Controls */}
             <div className="flex justify-center mt-10 space-x-3">
               {testimonials.map((_, index) => (
                 <button
@@ -723,7 +708,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced CTA Section with Pulse Animation */}
       <section
         className="py-24 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 relative overflow-hidden"
         id="cta"
@@ -731,7 +715,6 @@ const Landing = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 to-yellow-900/20"></div>
 
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
           <div
@@ -770,7 +753,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Footer with Hover Effects */}
       <footer className="bg-slate-900 text-white py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-800/50 to-slate-900/50"></div>
         <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -874,7 +856,6 @@ const Landing = () => {
         </div>
       </footer>
 
-      {/* Custom CSS for Animations */}
       <style jsx>{`
         @keyframes float {
           0%,
