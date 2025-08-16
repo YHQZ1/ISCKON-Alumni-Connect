@@ -22,17 +22,19 @@ const Landing = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [currentInstitution, setCurrentInstitution] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const observerRef = useRef();
+  const carouselRef = useRef(null);
+  const animationRef = useRef(null);
+  const [carouselSpeed] = useState(0.1); // Adjust speed here (lower is faster)
 
   // Enhanced mouse tracking for parallax effects
   useEffect(() => {
     const updateMousePosition = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
-    window.addEventListener('mousemove', updateMousePosition);
-    return () => window.removeEventListener('mousemove', updateMousePosition);
+    window.addEventListener("mousemove", updateMousePosition);
+    return () => window.removeEventListener("mousemove", updateMousePosition);
   }, []);
 
   // Intersection Observer for scroll animations
@@ -40,19 +42,22 @@ const Landing = () => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          setIsVisible(prev => ({
+          setIsVisible((prev) => ({
             ...prev,
-            [entry.target.id]: entry.isIntersecting
+            [entry.target.id]: entry.isIntersecting,
           }));
         });
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.1, rootMargin: "50px" }
     );
 
-    const elements = document.querySelectorAll('[data-animate]');
+    const elements = document.querySelectorAll("[data-animate]");
     elements.forEach((el) => observerRef.current?.observe(el));
 
-    return () => observerRef.current?.disconnect();
+    return () => {
+      observerRef.current?.disconnect();
+      cancelAnimationFrame(animationRef.current);
+    };
   }, []);
 
   // Auto testimonial rotation with pause on hover
@@ -64,20 +69,13 @@ const Landing = () => {
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
 
-  // Auto institution carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentInstitution((prev) => (prev + 1) % featuredInstitutions.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
   const featuredInstitutions = [
     {
       id: 1,
       name: "Bhaktivedanta Manor School",
       location: "Watford, UK",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
       needs: 3,
       alumni: 450,
     },
@@ -85,7 +83,8 @@ const Landing = () => {
       id: 2,
       name: "ISKCON Gurukula Vrindavan",
       location: "Vrindavan, India",
-      image: "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
       needs: 5,
       alumni: 1200,
     },
@@ -93,7 +92,8 @@ const Landing = () => {
       id: 3,
       name: "New Mayapur Academy",
       location: "West Bengal, India",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
       needs: 2,
       alumni: 320,
     },
@@ -101,41 +101,37 @@ const Landing = () => {
       id: 4,
       name: "Krishna Avanti Primary School",
       location: "London, UK",
-      image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
       needs: 4,
       alumni: 580,
     },
     {
       id: 5,
-      name: "Bhaktivedanta Manor School",
-      location: "Watford, UK",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
+      name: "Radha Madhava Gurukula",
+      location: "Belgium",
+      image:
+        "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
       needs: 3,
-      alumni: 450,
+      alumni: 320,
     },
     {
       id: 6,
-      name: "Bhaktivedanta Manor School",
-      location: "Watford, UK",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
-      needs: 3,
-      alumni: 450,
+      name: "Govardhan Academy",
+      location: "Mumbai, India",
+      image:
+        "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
+      needs: 2,
+      alumni: 280,
     },
     {
       id: 7,
-      name: "Bhaktivedanta Manor School",
-      location: "Watford, UK",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
-      needs: 3,
-      alumni: 450,
-    },
-    {
-      id: 8,
-      name: "Bhaktivedanta Manor School",
-      location: "Watford, UK",
-      image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
-      needs: 3,
-      alumni: 450,
+      name: "Gopal's Garden School",
+      location: "Florida, USA",
+      image:
+        "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
+      needs: 4,
+      alumni: 380,
     },
   ];
 
@@ -172,52 +168,89 @@ const Landing = () => {
     console.log("Searching for:", searchQuery);
   };
 
-  const nextInstitution = () => {
-    setCurrentInstitution((prev) => (prev + 1) % featuredInstitutions.length);
-  };
-
-  const prevInstitution = () => {
-    setCurrentInstitution((prev) => (prev - 1 + featuredInstitutions.length) % featuredInstitutions.length);
-  };
-
   // Parallax calculation
   const parallaxOffset = (strength = 0.5) => ({
-    transform: `translate(${(mousePosition.x - window.innerWidth / 2) * strength * 0.01}px, ${(mousePosition.y - window.innerHeight / 2) * strength * 0.01}px)`
+    transform: `translate(${
+      (mousePosition.x - window.innerWidth / 2) * strength * 0.01
+    }px, ${(mousePosition.y - window.innerHeight / 2) * strength * 0.01}px)`,
   });
+
+  // Infinite circular carousel animation
+  useEffect(() => {
+    if (!carouselRef.current) return;
+
+    const carousel = carouselRef.current;
+    const cards = carousel.querySelectorAll(".institution-card");
+    const cardWidth = cards[0]?.offsetWidth || 0;
+    const gap = 32; // px-8 = 32px gap
+    const totalWidth = (cardWidth + gap) * cards.length;
+
+    // Clone cards for seamless looping
+    cards.forEach((card) => {
+      const clone = card.cloneNode(true);
+      clone.classList.add("clone");
+      carousel.appendChild(clone);
+    });
+
+    let position = 0;
+    let lastTimestamp = 0;
+
+    const animate = (timestamp) => {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      position -= delta * carouselSpeed;
+
+      // Reset position when we've scrolled all original cards
+      if (position <= -totalWidth) {
+        position = 0;
+      }
+
+      carousel.style.transform = `translateX(${position}px)`;
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, [carouselSpeed]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-x-hidden">
       {/* Enhanced Floating Elements with Parallax */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div 
+        <div
           className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-orange-200/30 to-amber-200/30 rounded-full blur-xl animate-pulse"
           style={parallaxOffset(0.3)}
         ></div>
-        <div 
+        <div
           className="absolute top-40 right-20 w-40 h-40 bg-gradient-to-r from-yellow-200/30 to-orange-200/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.5),
-            animation: 'float 6s ease-in-out infinite'
+            animation: "float 6s ease-in-out infinite",
           }}
         ></div>
-        <div 
+        <div
           className="absolute bottom-40 left-1/4 w-36 h-36 bg-gradient-to-r from-amber-200/30 to-yellow-200/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.4),
-            animation: 'float 8s ease-in-out infinite reverse'
+            animation: "float 8s ease-in-out infinite reverse",
           }}
         ></div>
-        <div 
+        <div
           className="absolute top-1/2 right-1/4 w-24 h-24 bg-gradient-to-r from-orange-300/20 to-yellow-300/20 rounded-full blur-lg"
           style={{
             ...parallaxOffset(0.6),
-            animation: 'float 7s ease-in-out infinite'
+            animation: "float 7s ease-in-out infinite",
           }}
         ></div>
       </div>
 
       {/* Enhanced Navigation with Backdrop Blur */}
-      <nav className="bg-white/95 backdrop-blur-xl shadow-lg sticky top-0 z-50 border-b border-slate-200/50 transition-all duration-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-lg border-b border-slate-200/50 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-6">
           <div className="flex justify-between items-center h-18">
             <div className="flex items-center space-x-4 group">
@@ -233,14 +266,16 @@ const Landing = () => {
                 <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent">
                   ISKCON Alumni
                 </span>
-                <div className="text-sm text-slate-500 font-medium">Connect & Contribute</div>
+                <div className="text-sm text-slate-500 font-medium">
+                  Connect & Contribute
+                </div>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              {['How It Works', 'Institutions', 'About'].map((item, index) => (
+              {["How It Works", "Institutions", "About"].map((item, index) => (
                 <a
                   key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`}
+                  href={`#${item.toLowerCase().replace(" ", "-")}`}
                   className="text-slate-700 hover:text-orange-600 transition-all duration-300 font-medium relative group"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
@@ -257,54 +292,73 @@ const Landing = () => {
       </nav>
 
       {/* Enhanced Hero Section with Staggered Animations */}
-      <section className="pt-24 pb-32 relative overflow-hidden" id="hero" data-animate>
+      <section
+        className="pt-24 pb-32 relative overflow-hidden"
+        id="hero"
+        data-animate
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50/60 via-amber-50/40 to-yellow-50/60"></div>
         <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-          <div 
+          <div
             className={`mb-8 transform transition-all duration-1000 ${
-              isVisible.hero ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+              isVisible.hero
+                ? "translate-y-0 opacity-100"
+                : "translate-y-10 opacity-0"
             }`}
-            style={{ transitionDelay: '200ms' }}
+            style={{ transitionDelay: "200ms" }}
           >
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-full px-6 py-3 border border-orange-200/50 shadow-lg shadow-orange-500/10 hover:scale-105 transition-transform duration-300">
               <Shield className="h-5 w-5 text-orange-600 animate-pulse" />
-              <span className="text-sm font-semibold text-orange-700">Trusted by 5000+ Alumni Worldwide</span>
+              <span className="text-sm font-semibold text-orange-700">
+                Trusted by 5000+ Alumni Worldwide
+              </span>
             </div>
           </div>
-          
-          <h1 
+
+          <h1
             className={`text-6xl md:text-7xl font-bold mb-8 leading-tight transform transition-all duration-1000 ${
-              isVisible.hero ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.hero
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: '400ms' }}
+            style={{ transitionDelay: "400ms" }}
           >
             <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent inline-block hover:scale-105 transition-transform duration-500">
               Reconnect
             </span>
             <br />
-            <span className="text-slate-800 inline-block" style={{ animationDelay: '600ms' }}>with Your</span>
+            <span
+              className="text-slate-800 inline-block"
+              style={{ animationDelay: "600ms" }}
+            >
+              with Your
+            </span>
             <br />
             <span className="bg-gradient-to-r from-yellow-500 via-orange-500 to-amber-500 bg-clip-text text-transparent inline-block hover:scale-105 transition-transform duration-500">
               Spiritual Roots
             </span>
           </h1>
-          
-          <p 
+
+          <p
             className={`text-xl text-slate-600 mb-12 max-w-4xl mx-auto leading-relaxed transform transition-all duration-1000 ${
-              isVisible.hero ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.hero
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: '800ms' }}
+            style={{ transitionDelay: "800ms" }}
           >
-            Bridge the gap between ISKCON alumni and institutions. Support the 
-            spiritual education that shaped your Krishna consciousness journey with 
-            complete transparency and meaningful impact.
+            Bridge the gap between ISKCON alumni and institutions. Support the
+            spiritual education that shaped your Krishna consciousness journey
+            with complete transparency and meaningful impact.
           </p>
 
-          <div 
+          <div
             className={`max-w-3xl mx-auto mb-16 transform transition-all duration-1000 ${
-              isVisible.hero ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.hero
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: '1000ms' }}
+            style={{ transitionDelay: "1000ms" }}
           >
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300 animate-pulse"></div>
@@ -329,11 +383,13 @@ const Landing = () => {
             </div>
           </div>
 
-          <div 
+          <div
             className={`flex flex-col sm:flex-row gap-6 justify-center items-center transform transition-all duration-1000 ${
-              isVisible.hero ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.hero
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: '1200ms' }}
+            style={{ transitionDelay: "1200ms" }}
           >
             <button className="group bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white px-14 py-5 rounded-2xl text-lg font-semibold hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 flex items-center space-x-3 transition-all duration-300 shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-105 transform">
               <GraduationCap className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
@@ -348,26 +404,34 @@ const Landing = () => {
       </section>
 
       {/* Enhanced Stats Section with Counter Animation */}
-      <section className="py-24 bg-white/80 backdrop-blur-sm border-y border-slate-200/50" id="stats" data-animate>
+      <section
+        className="py-24 bg-white/80 backdrop-blur-sm border-y border-slate-200/50"
+        id="stats"
+        data-animate
+      >
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => {
               const IconComponent = stat.icon;
               const gradients = [
                 "from-orange-500 to-amber-500",
-                "from-yellow-500 to-orange-500", 
+                "from-yellow-500 to-orange-500",
                 "from-amber-500 to-yellow-500",
-                "from-orange-600 to-yellow-500"
+                "from-orange-600 to-yellow-500",
               ];
               return (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className={`text-center group transform transition-all duration-1000 ${
-                    isVisible.stats ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+                    isVisible.stats
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-20 opacity-0"
                   }`}
                   style={{ transitionDelay: `${index * 200}ms` }}
                 >
-                  <div className={`w-20 h-20 bg-gradient-to-br ${gradients[index]} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+                  <div
+                    className={`w-20 h-20 bg-gradient-to-br ${gradients[index]} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                  >
                     <IconComponent className="h-10 w-10 text-white group-hover:scale-110 transition-transform duration-300" />
                   </div>
                   <div className="text-4xl font-bold text-slate-800 mb-3 group-hover:scale-105 transition-transform duration-300">
@@ -388,17 +452,24 @@ const Landing = () => {
         data-animate
       >
         <div className="max-w-7xl mx-auto px-6">
-          <div 
+          <div
             className={`text-center mb-20 transform transition-all duration-1000 ${
-              isVisible['how-it-works'] ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible["how-it-works"]
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
           >
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-full px-6 py-3 border border-orange-200/50 shadow-lg shadow-orange-500/10 mb-6 hover:scale-105 transition-transform duration-300">
               <Sparkles className="h-5 w-5 text-orange-600 animate-spin" />
-              <span className="text-sm font-semibold text-orange-700">Simple & Transparent Process</span>
+              <span className="text-sm font-semibold text-orange-700">
+                Simple & Transparent Process
+              </span>
             </div>
             <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              How It <span className="bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">Works</span>
+              How It{" "}
+              <span className="bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
+                Works
+              </span>
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Simple, transparent, and spiritual - connecting hearts across the
@@ -411,35 +482,44 @@ const Landing = () => {
               {
                 icon: Search,
                 title: "Find Your Institution",
-                description: "Search for your gurukula, temple school, or any ISKCON educational institution you're connected with using our intelligent search.",
-                gradient: "from-orange-500 to-amber-500"
+                description:
+                  "Search for your gurukula, temple school, or any ISKCON educational institution you're connected with using our intelligent search.",
+                gradient: "from-orange-500 to-amber-500",
               },
               {
                 icon: Eye,
                 title: "Explore Their Needs",
-                description: "Discover transparent funding needs with detailed photos, descriptions, and real-time progress tracking for complete accountability.",
-                gradient: "from-yellow-500 to-orange-500"
+                description:
+                  "Discover transparent funding needs with detailed photos, descriptions, and real-time progress tracking for complete accountability.",
+                gradient: "from-yellow-500 to-orange-500",
               },
               {
                 icon: Heart,
                 title: "Contribute & Connect",
-                description: "Make your contribution securely and stay connected with regular updates on how your support is making a meaningful difference.",
-                gradient: "from-amber-500 to-yellow-500"
-              }
+                description:
+                  "Make your contribution securely and stay connected with regular updates on how your support is making a meaningful difference.",
+                gradient: "from-amber-500 to-yellow-500",
+              },
             ].map((step, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`text-center group transform transition-all duration-1000 ${
-                  isVisible['how-it-works'] ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+                  isVisible["how-it-works"]
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-20 opacity-0"
                 }`}
                 style={{ transitionDelay: `${(index + 1) * 200}ms` }}
               >
                 <div className="relative mb-8">
-                  <div className={`w-24 h-24 bg-gradient-to-br ${step.gradient} rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-orange-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+                  <div
+                    className={`w-24 h-24 bg-gradient-to-br ${step.gradient} rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-orange-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                  >
                     <step.icon className="h-12 w-12 text-white group-hover:scale-110 transition-transform duration-300" />
                   </div>
                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-100 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-sm font-bold text-orange-600">{index + 1}</span>
+                    <span className="text-sm font-bold text-orange-600">
+                      {index + 1}
+                    </span>
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-orange-700 transition-colors duration-300">
@@ -454,102 +534,84 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Institutions Carousel */}
-      <section id="institutions" className="py-24 bg-white/80 backdrop-blur-sm" data-animate>
+      {/* Enhanced Infinite Circular Institutions Carousel */}
+      <section
+        id="institutions"
+        className="py-24 bg-white/80 backdrop-blur-sm"
+        data-animate
+      >
         <div className="max-w-7xl mx-auto px-6">
-          <div 
+          <div
             className={`text-center mb-20 transform transition-all duration-1000 ${
-              isVisible.institutions ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.institutions
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
           >
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-full px-6 py-3 border border-yellow-200/50 shadow-lg shadow-yellow-500/10 mb-6 hover:scale-105 transition-transform duration-300">
               <Globe className="h-5 w-5 text-yellow-600 animate-pulse" />
-              <span className="text-sm font-semibold text-yellow-700">Worldwide Network</span>
+              <span className="text-sm font-semibold text-yellow-700">
+                Worldwide Network
+              </span>
             </div>
             <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              Featured <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Institutions</span>
+              Featured{" "}
+              <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+                Institutions
+              </span>
             </h2>
             <p className="text-xl text-slate-600">
               Discover ISKCON institutions worldwide seeking alumni support
             </p>
           </div>
 
-          {/* Carousel Container */}
-          <div className="relative">
-            <div className="overflow-hidden rounded-3xl">
-              <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentInstitution * (100 / 3)}%)` }}
-              >
-                {featuredInstitutions.map((institution, index) => (
-                  <div
-                    key={institution.id}
-                    className="w-1/3 flex-shrink-0 px-4"
-                  >
-                    <div className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl overflow-hidden transition-all duration-500 border border-slate-200/50 hover:border-orange-200 hover:scale-105 transform">
-                      <div className="relative overflow-hidden">
-                        <img
-                          src={institution.image}
-                          alt={institution.name}
-                          className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent group-hover:from-slate-900/40 transition-all duration-500"></div>
-                        <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 border border-orange-200/50 shadow-lg animate-bounce">
-                          <span className="text-sm font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
-                            {institution.needs} active needs
+          {/* Infinite Circular Carousel */}
+          <div className="relative overflow-hidden">
+            <div ref={carouselRef} className="flex w-max gap-8 px-8">
+              {featuredInstitutions.map((institution) => (
+                <div
+                  key={institution.id}
+                  className="institution-card w-96 flex-shrink-0"
+                >
+                  <div className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl overflow-hidden transition-all duration-500 border border-slate-200/50 hover:border-orange-200 transform">
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={institution.image}
+                        alt={institution.name}
+                        className="w-full h-56 object-cover transition-transform duration-700"
+                        loading="lazy" // Add lazy loading
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent group-hover:from-slate-900/40 transition-all duration-500"></div>
+                      <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 border border-orange-200/50 shadow-lg animate-bounce">
+                        <span className="text-sm font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
+                          {institution.needs} active needs
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-8">
+                      <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-orange-700 transition-colors duration-300">
+                        {institution.name}
+                      </h3>
+                      <div className="flex items-center text-slate-600 mb-6">
+                        <MapPin className="h-5 w-5 mr-3 text-yellow-500" />
+                        <span className="font-medium">
+                          {institution.location}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-slate-600">
+                          <Users className="h-5 w-5 mr-3 text-orange-500" />
+                          <span className="font-medium">
+                            {institution.alumni} alumni
                           </span>
                         </div>
-                      </div>
-                      <div className="p-8">
-                        <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-orange-700 transition-colors duration-300">
-                          {institution.name}
-                        </h3>
-                        <div className="flex items-center text-slate-600 mb-6">
-                          <MapPin className="h-5 w-5 mr-3 text-yellow-500" />
-                          <span className="font-medium">{institution.location}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-slate-600">
-                            <Users className="h-5 w-5 mr-3 text-orange-500" />
-                            <span className="font-medium">{institution.alumni} alumni</span>
-                          </div>
-                          <button className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-8 py-3 rounded-2xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-lg shadow-orange-500/25 font-semibold group-hover:scale-105">
-                            View Details
-                          </button>
-                        </div>
+                        <button className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-8 py-3 rounded-2xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-lg shadow-orange-500/25 font-semibold group-hover:scale-105">
+                          View Details
+                        </button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Carousel Controls */}
-            <button
-              onClick={prevInstitution}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm border border-orange-200/50 rounded-full p-3 shadow-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 hover:scale-110"
-            >
-              <ChevronLeft className="h-6 w-6 text-orange-600" />
-            </button>
-            <button
-              onClick={nextInstitution}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm border border-orange-200/50 rounded-full p-3 shadow-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 hover:scale-110"
-            >
-              <ChevronRight className="h-6 w-6 text-orange-600" />
-            </button>
-
-            {/* Carousel Indicators */}
-            <div className="flex justify-center mt-8 space-x-3">
-              {featuredInstitutions.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentInstitution(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentInstitution
-                      ? "bg-gradient-to-r from-orange-500 to-yellow-500 scale-125"
-                      : "bg-slate-300 hover:bg-slate-400"
-                  }`}
-                />
+                </div>
               ))}
             </div>
           </div>
@@ -557,25 +619,32 @@ const Landing = () => {
       </section>
 
       {/* Enhanced Testimonials with Smoother Transitions */}
-      <section 
-        className="py-24 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50" 
+      <section
+        className="py-24 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50"
         id="testimonials"
         data-animate
         onMouseEnter={() => setIsAutoPlaying(false)}
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
         <div className="max-w-6xl mx-auto px-6">
-          <div 
+          <div
             className={`text-center mb-20 transform transition-all duration-1000 ${
-              isVisible.testimonials ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+              isVisible.testimonials
+                ? "translate-y-0 opacity-100"
+                : "translate-y-20 opacity-0"
             }`}
           >
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full px-6 py-3 border border-amber-200/50 shadow-lg shadow-amber-500/10 mb-6 hover:scale-105 transition-transform duration-300">
               <Star className="h-5 w-5 text-amber-600 animate-pulse" />
-              <span className="text-sm font-semibold text-amber-700">Community Stories</span>
+              <span className="text-sm font-semibold text-amber-700">
+                Community Stories
+              </span>
             </div>
             <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              Community <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Voices</span>
+              Community{" "}
+              <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                Voices
+              </span>
             </h2>
             <p className="text-xl text-slate-600">
               Hear inspiring stories from our alumni and institutions
@@ -583,23 +652,25 @@ const Landing = () => {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <div 
+            <div
               className={`bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 p-10 md:p-16 text-center border border-slate-200/50 relative overflow-hidden transform transition-all duration-1000 ${
-                isVisible.testimonials ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+                isVisible.testimonials
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-20 opacity-0"
               }`}
-              style={{ transitionDelay: '200ms' }}
+              style={{ transitionDelay: "200ms" }}
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500"></div>
-              
+
               {/* Animated Stars */}
               <div className="flex justify-center mb-8">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
                     className={`h-7 w-7 text-amber-400 fill-current mx-1 transform transition-all duration-300 hover:scale-125`}
-                    style={{ 
+                    style={{
                       animationDelay: `${i * 100}ms`,
-                      animation: 'twinkle 2s ease-in-out infinite'
+                      animation: "twinkle 2s ease-in-out infinite",
                     }}
                   />
                 ))}
@@ -611,11 +682,11 @@ const Landing = () => {
                   <div
                     key={index}
                     className={`absolute inset-0 flex flex-col justify-center transition-all duration-700 ${
-                      index === currentTestimonial 
-                        ? 'opacity-100 transform translate-x-0' 
-                        : index < currentTestimonial 
-                          ? 'opacity-0 transform -translate-x-full' 
-                          : 'opacity-0 transform translate-x-full'
+                      index === currentTestimonial
+                        ? "opacity-100 transform translate-x-0"
+                        : index < currentTestimonial
+                        ? "opacity-0 transform -translate-x-full"
+                        : "opacity-0 transform translate-x-full"
                     }`}
                   >
                     <blockquote className="text-2xl md:text-3xl text-slate-700 mb-10 leading-relaxed font-medium">
@@ -653,19 +724,28 @@ const Landing = () => {
       </section>
 
       {/* Enhanced CTA Section with Pulse Animation */}
-      <section className="py-24 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 relative overflow-hidden" id="cta" data-animate>
+      <section
+        className="py-24 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 relative overflow-hidden"
+        id="cta"
+        data-animate
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 to-yellow-900/20"></div>
-        
+
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
-          <div className="absolute top-1/2 right-20 w-32 h-32 bg-white/5 rounded-full" style={{ animation: 'float 8s ease-in-out infinite' }}></div>
+          <div
+            className="absolute top-1/2 right-20 w-32 h-32 bg-white/5 rounded-full"
+            style={{ animation: "float 8s ease-in-out infinite" }}
+          ></div>
           <div className="absolute bottom-20 left-1/3 w-16 h-16 bg-white/10 rounded-full animate-bounce"></div>
         </div>
 
-        <div 
+        <div
           className={`max-w-6xl mx-auto px-6 text-center relative z-10 transform transition-all duration-1000 ${
-            isVisible.cta ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+            isVisible.cta
+              ? "translate-y-0 opacity-100"
+              : "translate-y-20 opacity-0"
           }`}
         >
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-8 hover:scale-105 transition-transform duration-500">
@@ -716,10 +796,15 @@ const Landing = () => {
                 For Alumni
               </h3>
               <ul className="space-y-3 text-slate-400">
-                {['Find Your School', 'Browse Needs', 'Make Contribution', 'Track Impact'].map((item, index) => (
+                {[
+                  "Find Your School",
+                  "Browse Needs",
+                  "Make Contribution",
+                  "Track Impact",
+                ].map((item, index) => (
                   <li key={item}>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="hover:text-white transition-all duration-300 hover:text-yellow-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
@@ -735,10 +820,15 @@ const Landing = () => {
                 For Institutions
               </h3>
               <ul className="space-y-3 text-slate-400">
-                {['Register Institution', 'Post Your Needs', 'Connect with Alumni', 'Transparency Tools'].map((item, index) => (
+                {[
+                  "Register Institution",
+                  "Post Your Needs",
+                  "Connect with Alumni",
+                  "Transparency Tools",
+                ].map((item, index) => (
                   <li key={item}>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="hover:text-white transition-all duration-300 hover:text-yellow-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
@@ -754,10 +844,15 @@ const Landing = () => {
                 Support
               </h3>
               <ul className="space-y-3 text-slate-400">
-                {['Help Center', 'Contact Us', 'Privacy Policy', 'Terms of Service'].map((item, index) => (
+                {[
+                  "Help Center",
+                  "Contact Us",
+                  "Privacy Policy",
+                  "Terms of Service",
+                ].map((item, index) => (
                   <li key={item}>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="hover:text-white transition-all duration-300 hover:text-yellow-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
@@ -782,20 +877,37 @@ const Landing = () => {
       {/* Custom CSS for Animations */}
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(5deg);
+          }
         }
-        
+
         @keyframes twinkle {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.1); }
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scale(1.1);
+          }
         }
-        
+
         @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
         }
-        
+
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 4s ease infinite;
