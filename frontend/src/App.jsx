@@ -11,6 +11,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/signup/alumni" element={<Auth />} />
+          <Route path="/auth/signup/institution" element={<Auth />} />
           <Route path="*" element={<h1>404 - Page Not Found</h1>} />
         </Routes>
       </div>

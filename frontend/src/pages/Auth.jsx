@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  BookOpen,
+  GraduationCap,
   Sparkles,
   Eye,
   EyeOff,
@@ -8,7 +8,6 @@ import {
   Mail,
   Lock,
   User,
-  GraduationCap,
   Building,
   Phone,
   MapPin,
@@ -19,10 +18,19 @@ import {
 } from "lucide-react";
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [userType, setUserType] = useState(() => {
+    const pathParts = window.location.pathname.split("/");
+    if (pathParts.length > 3 && pathParts[2] === "signup") {
+      return pathParts[3] === "institution" ? "institution" : "alumni";
+    }
+    return "alumni";
+  });
+
+  const [isSignUp, setIsSignUp] = useState(() => {
+    return window.location.pathname.includes("/signup/");
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userType, setUserType] = useState("alumni");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [formData, setFormData] = useState({
     firstName: "",
@@ -143,21 +151,21 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 overflow-hidden flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 overflow-hidden flex items-center justify-center">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
-          className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-orange-200/30 to-amber-200/30 rounded-full blur-xl animate-pulse"
+          className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-blue-200/30 to-indigo-200/30 rounded-full blur-xl animate-pulse"
           style={parallaxOffset(0.3)}
         ></div>
         <div
-          className="absolute top-40 right-20 w-40 h-40 bg-gradient-to-r from-yellow-200/30 to-orange-200/30 rounded-full blur-xl"
+          className="absolute top-40 right-20 w-40 h-40 bg-gradient-to-r from-purple-200/30 to-blue-200/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.5),
             animation: "float 6s ease-in-out infinite",
           }}
         ></div>
         <div
-          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gradient-to-r from-amber-200/30 to-yellow-200/30 rounded-full blur-xl"
+          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gradient-to-r from-indigo-200/30 to-purple-200/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.4),
             animation: "float 8s ease-in-out infinite reverse",
@@ -170,25 +178,25 @@ const Auth = () => {
           <div className="flex justify-between items-center h-18">
             <div className="flex items-center space-x-4 group cursor-pointer">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-xl shadow-orange-500/25 group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
-                  <BookOpen className="h-7 w-7 text-white transform group-hover:scale-110 transition-transform duration-300" />
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/25 group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
+                  <GraduationCap className="h-7 w-7 text-white transform group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center animate-pulse">
                   <Sparkles className="h-2 w-2 text-white animate-spin" />
                 </div>
               </div>
               <div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                  ISKCON Alumni
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Alumni Connect
                 </span>
                 <div className="text-sm text-slate-500 font-medium">
-                  Connect & Contribute
+                  Support & Give Back
                 </div>
               </div>
             </div>
             <button
               onClick={() => window.history.back()}
-              className="flex items-center space-x-2 text-slate-600 hover:text-orange-600 transition-colors duration-300 font-medium group"
+              className="flex items-center space-x-2 text-slate-600 hover:text-blue-600 transition-colors duration-300 font-medium group"
             >
               <X className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
               <span>Close</span>
@@ -200,15 +208,15 @@ const Auth = () => {
       <div className="w-full max-w-6xl mx-auto px-6 pt-24 pb-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16">
           <div className="text-center lg:text-left animate-fade-in mt-30">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-full px-6 py-3 border border-orange-200/50 shadow-lg shadow-orange-500/10 mb-8 hover:scale-105 transition-transform duration-300">
-              <Shield className="h-5 w-5 text-orange-600 animate-pulse" />
-              <span className="text-sm font-semibold text-orange-700">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full px-6 py-3 border border-blue-200/50 shadow-lg shadow-blue-500/10 mb-8 hover:scale-105 transition-transform duration-300">
+              <Shield className="h-5 w-5 text-blue-600 animate-pulse" />
+              <span className="text-sm font-semibold text-blue-700">
                 Secure & Trusted Platform
               </span>
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold mb-8 leading-tight">
-              <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent block">
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent block">
                 {isSignUp ? "Join Our" : "Welcome"}
               </span>
               <span className="text-slate-800 block">
@@ -218,14 +226,35 @@ const Auth = () => {
 
             <p className="text-xl text-slate-600 mb-8 leading-relaxed">
               {isSignUp
-                ? "Connect with thousands of ISKCON alumni and institutions worldwide. Support spiritual education with transparency and trust."
-                : "Sign in to reconnect with your spiritual roots and support the institutions that shaped your Krishna consciousness journey."}
+                ? "Connect with thousands of alumni and educational institutions worldwide. Support education with transparency and trust."
+                : "Sign in to reconnect with your alma mater and support the institutions that shaped your educational journey."}
             </p>
+
+            <div className="grid grid-cols-2 gap-6 mt-8">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/30 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-slate-800 mb-2">For Alumni</h3>
+                <p className="text-sm text-slate-600">
+                  Reconnect with your school and make meaningful contributions
+                </p>
+              </div>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-purple-200/30 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                  <Building className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-slate-800 mb-2">For Schools</h3>
+                <p className="text-sm text-slate-600">
+                  Connect with alumni and showcase your funding needs
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-3xl blur opacity-20 animate-pulse"></div>
-            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-500/10 border border-slate-200/50 p-8 lg:p-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur opacity-20 animate-pulse"></div>
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-200/50 p-8 lg:p-10">
               {isSignUp && (
                 <div className="mb-8">
                   <div className="text-center mb-4">
@@ -239,7 +268,7 @@ const Auth = () => {
                       onClick={() => setUserType("alumni")}
                       className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
                         userType === "alumni"
-                          ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg"
+                          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
                           : "text-slate-600 hover:text-slate-800"
                       }`}
                     >
@@ -251,7 +280,7 @@ const Auth = () => {
                       onClick={() => setUserType("institution")}
                       className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
                         userType === "institution"
-                          ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg"
+                          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
                           : "text-slate-600 hover:text-slate-800"
                       }`}
                     >
@@ -275,7 +304,7 @@ const Auth = () => {
                 </p>
               </div>
 
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {isSignUp && (
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
@@ -289,7 +318,7 @@ const Auth = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
-                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                             errors.firstName
                               ? "border-red-300"
                               : "border-slate-200"
@@ -314,7 +343,7 @@ const Auth = () => {
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleInputChange}
-                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                             errors.lastName
                               ? "border-red-300"
                               : "border-slate-200"
@@ -343,7 +372,7 @@ const Auth = () => {
                         name="institutionName"
                         value={formData.institutionName}
                         onChange={handleInputChange}
-                        className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                        className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                           errors.institutionName
                             ? "border-red-300"
                             : "border-slate-200"
@@ -370,7 +399,7 @@ const Auth = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                      className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                         errors.email ? "border-red-300" : "border-slate-200"
                       }`}
                       placeholder="Enter your email"
@@ -394,14 +423,14 @@ const Auth = () => {
                             name="graduationYear"
                             value={formData.graduationYear}
                             onChange={handleInputChange}
-                            className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                            className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                               errors.graduationYear
                                 ? "border-red-300"
                                 : "border-slate-200"
                             }`}
                           >
                             <option value="">Select year</option>
-                            {Array.from({ length: 30 }, (_, i) => 2024 - i).map(
+                            {Array.from({ length: 50 }, (_, i) => 2024 - i).map(
                               (year) => (
                                 <option key={year} value={year}>
                                   {year}
@@ -432,7 +461,7 @@ const Auth = () => {
                           name="location"
                           value={formData.location}
                           onChange={handleInputChange}
-                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                          className={`w-full pl-4 pr-4 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                             errors.location
                               ? "border-red-300"
                               : "border-slate-200"
@@ -460,7 +489,7 @@ const Auth = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className={`w-full pl-4 pr-12 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                      className={`w-full pl-4 pr-12 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                         errors.password ? "border-red-300" : "border-slate-200"
                       }`}
                       placeholder="Enter your password"
@@ -496,7 +525,7 @@ const Auth = () => {
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className={`w-full pl-4 pr-12 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-orange-400 focus:bg-white ${
+                        className={`w-full pl-4 pr-12 py-4 rounded-2xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:border-blue-400 focus:bg-white ${
                           errors.confirmPassword
                             ? "border-red-300"
                             : "border-slate-200"
@@ -532,21 +561,21 @@ const Auth = () => {
                       name="agreeToTerms"
                       checked={formData.agreeToTerms}
                       onChange={handleInputChange}
-                      className="h-5 w-5 text-orange-500 focus:ring-orange-400 border-2 border-slate-300 rounded-md"
+                      className="h-5 w-5 text-blue-500 focus:ring-blue-400 border-2 border-slate-300 rounded-md"
                     />
                     <div className="text-sm">
                       <span className="text-slate-600">
                         I agree to the{" "}
                         <button
                           type="button"
-                          className="text-orange-600 hover:text-orange-700 font-semibold underline transition-colors duration-300"
+                          className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors duration-300"
                         >
                           Terms of Service
                         </button>{" "}
                         and{" "}
                         <button
                           type="button"
-                          className="text-orange-600 hover:text-orange-700 font-semibold underline transition-colors duration-300"
+                          className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors duration-300"
                         >
                           Privacy Policy
                         </button>
@@ -563,7 +592,7 @@ const Auth = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white py-4 rounded-2xl font-semibold text-lg hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 transition-all duration-300 shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 transform hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-3"
+                  className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white py-4 rounded-2xl font-semibold text-lg hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-3"
                 >
                   {isLoading ? (
                     <>
@@ -584,13 +613,13 @@ const Auth = () => {
                   <div className="text-center">
                     <button
                       type="button"
-                      className="text-orange-600 hover:text-orange-700 font-semibold transition-colors duration-300"
+                      className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-300"
                     >
                       Forgot your password?
                     </button>
                   </div>
                 )}
-              </div>
+              </form>
 
               <div className="mt-8 text-center border-t border-slate-200 pt-6">
                 <span className="text-slate-600">
@@ -600,7 +629,7 @@ const Auth = () => {
                 </span>
                 <button
                   onClick={toggleAuthMode}
-                  className="ml-2 text-orange-600 hover:text-orange-700 font-semibold transition-colors duration-300 hover:underline"
+                  className="ml-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-300 hover:underline"
                 >
                   {isSignUp ? "Sign In" : "Sign Up"}
                 </button>
