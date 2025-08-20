@@ -16,6 +16,7 @@ import {
   CheckCircle,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
   const [userType, setUserType] = useState(() => {
@@ -46,6 +47,7 @@ const Auth = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -592,6 +594,7 @@ const Auth = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
+                  onClick={() => navigate("/alumni/home")}
                   className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white py-4 rounded-2xl font-semibold text-lg hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-3"
                 >
                   {isLoading ? (
