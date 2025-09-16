@@ -1,33 +1,37 @@
+// server.js
 import dotenv from "dotenv";
-import express from "express";
-import cors from "cors";
-import authenticateToken from "./src/middleware/authenticateToken.js";
-
-import authRoutes from "./src/routes/authRoutes.js";
-
 dotenv.config();
 
-const app = express();
+import express from "express";
+import cors from "cors";
 
-// Middleware
+import authRoutes from "./src/routes/authRoutes.js"    // signup/login (public)
+import userRoutes from "./src/routes/userRoutes.js";     // protected user actions
+import schoolRoutes from "./src/routes/schoolRoutes.js"; // protected school create, public list/get
+
+import authenticateToken from "./src/middleware/authenticateToken.js";
+import errorHandler from "./src/middleware/errorMiddleware.js";
+
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Public auth routes
 app.use("/api/auth", authRoutes);
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("Backend is live");
-});
+// Protect all user routes with JWT auth
+app.use("/api/users", authenticateToken, userRoutes);
 
-// Example protected route
-app.get("/api/profile", authenticateToken, (req, res) => {
-  res.json({ message: `Hello ${req.user.email}` });
-});
+// Choose whether schools listing is public or protected.
+// We'll protect creation but allow public GETs in routes: keep authenticateToken to protect POST only.
+// To keep it simple: protect all school routes; if you want public listing move authenticateToken to router-level.
+app.use("/api/schools", authenticateToken, schoolRoutes);
 
-// Start server
+// Health
+app.get("/", (_req, res) => res.send("Backend live"));
+
+// Error handler (last)
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
