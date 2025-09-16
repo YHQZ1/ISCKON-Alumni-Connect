@@ -27,7 +27,8 @@ import {
   Filter,
   SortDesc,
 } from "lucide-react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const AlumniHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,15 +42,15 @@ const AlumniHomePage = () => {
   const [carouselSpeed] = useState(0.1);
   const navigate = useNavigate();
 
-  // Mock user data
-  const currentUser = {
-    name: "Sarah Johnson",
-    batch: "Class of 2010",
-    school: "Stanford Elementary School",
-    totalDonated: 2500,
-    projectsSupported: 8,
+  const [currentUser, setCurrentUser] = useState({
+    name: "",
+    batch: "",
+    school: "",
+    totalDonated: 0,
+    projectsSupported: 0,
     avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
-  };
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -80,6 +81,38 @@ const AlumniHomePage = () => {
       cancelAnimationFrame(animationRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+      const response = await axios.get("http://localhost:4000/api/users/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userData = response.data.user;
+      setCurrentUser({
+        name: `${userData.first_name} ${userData.last_name}`,
+        batch: userData.graduation_year
+          ? `Class of ${userData.graduation_year}`
+          : "Alumni",
+        school: userData.institution_name || "Your School",
+        totalDonated: 2500,
+        projectsSupported: 8,
+        avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setIsLoading(false);
+    }
+  };
 
   const featuredInstitutions = [
     {
@@ -310,7 +343,10 @@ const AlumniHomePage = () => {
                 <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
 
-              <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer">
+              <div
+                onClick={() => navigate("/alumni/profile")}
+                className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+              >
                 <User className="w-8 h-8 text-gray-400 rounded-full border p-1" />
                 <div className="text-right">
                   <div className="text-sm font-semibold text-gray-800">
@@ -352,7 +388,8 @@ const AlumniHomePage = () => {
                 <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
                   <Star className="h-5 w-5 text-gray-700 animate-pulse" />
                   <span className="text-sm font-semibold text-gray-800">
-                    Welcome back, {currentUser.name.split(" ")[0]}!
+                    Welcome back, {currentUser.name.split(" ")[0]}!{" "}
+                    {/* Fixed this line */}
                   </span>
                 </div>
 

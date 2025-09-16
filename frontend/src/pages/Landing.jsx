@@ -691,7 +691,7 @@ const Landing = () => {
 
       <footer className="bg-gray-900 text-gray-50 py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50"></div>
-        <div className="w-full relative z-10 px-6">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid md:grid-cols-4 gap-10">
             <div className="group">
               <div className="flex items-center space-x-3 mb-8">
