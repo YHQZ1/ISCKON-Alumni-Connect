@@ -212,28 +212,28 @@ const Landing = () => {
   }, [carouselSpeed]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
-          className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-blue-200/30 to-indigo-200/30 rounded-full blur-xl animate-pulse"
+          className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
           style={parallaxOffset(0.3)}
         ></div>
         <div
-          className="absolute top-40 right-20 w-40 h-40 bg-gradient-to-r from-purple-200/30 to-blue-200/30 rounded-full blur-xl"
+          className="absolute top-40 right-20 w-40 h-40 bg-gray-300/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.5),
             animation: "float 6s ease-in-out infinite",
           }}
         ></div>
         <div
-          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gradient-to-r from-indigo-200/30 to-purple-200/30 rounded-full blur-xl"
+          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gray-200/30 rounded-full blur-xl"
           style={{
             ...parallaxOffset(0.4),
             animation: "float 8s ease-in-out infinite reverse",
           }}
         ></div>
         <div
-          className="absolute top-1/2 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-300/20 to-purple-300/20 rounded-full blur-lg"
+          className="absolute top-1/2 right-1/4 w-24 h-24 bg-gray-300/20 rounded-full blur-lg"
           style={{
             ...parallaxOffset(0.6),
             animation: "float 7s ease-in-out infinite",
@@ -241,23 +241,20 @@ const Landing = () => {
         ></div>
       </div>
 
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-lg border-b border-slate-200/50 transition-all duration-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-6">
           <div className="flex justify-between items-center h-18">
             <div className="flex items-center space-x-4 group">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/25 group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
-                  <GraduationCap className="h-7 w-7 text-white transform group-hover:scale-110 transition-transform duration-300" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center animate-pulse">
-                  <Sparkles className="h-2 w-2 text-white animate-spin" />
+                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md">
+                  <GraduationCap className="h-7 w-7 text-gray-50 transform transition-transform duration-300" />
                 </div>
               </div>
               <div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold text-gray-900">
                   Alumni Connect
                 </span>
-                <div className="text-sm text-slate-500 font-medium">
+                <div className="text-sm text-gray-600 font-medium">
                   Support & Give Back
                 </div>
               </div>
@@ -267,16 +264,16 @@ const Landing = () => {
                 <a
                   key={item}
                   href={`#${item.toLowerCase().replace(" ", "-")}`}
-                  className="text-slate-700 hover:text-blue-600 transition-all duration-300 font-medium relative group"
+                  className="text-gray-700 hover:text-gray-900 transition-all duration-300 font-medium relative group"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {item}
-                  <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-full transition-all duration-500"></div>
+                  <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gray-800 group-hover:w-full transition-all duration-500"></div>
                 </a>
               ))}
               <button
                 onClick={() => navigate("/auth")}
-                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white px-8 py-3 rounded-2xl hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 font-semibold hover:scale-105 transform"
+                className="bg-gray-900 text-gray-50 px-8 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-sm hover:shadow-md font-semibold cursor-pointer"
               >
                 Sign In
               </button>
@@ -290,7 +287,7 @@ const Landing = () => {
         id="hero"
         data-animate
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 via-indigo-50/40 to-purple-50/60"></div>
+        <div className="absolute inset-0 bg-gray-100/60"></div>
         <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
           <div
             className={`mb-8 transform transition-all duration-1000 ${
@@ -298,45 +295,38 @@ const Landing = () => {
                 ? "translate-y-0 opacity-100"
                 : "translate-y-10 opacity-0"
             }`}
-            style={{ transitionDelay: "200ms" }}
-          >
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full px-6 py-3 border border-blue-200/50 shadow-lg shadow-blue-500/10 hover:scale-105 transition-transform duration-300">
-              <Shield className="h-5 w-5 text-blue-600 animate-pulse" />
-              <span className="text-sm font-semibold text-blue-700">
-                Trusted by 25,000+ Alumni Worldwide
-              </span>
-            </div>
-          </div>
+            style={{ transitionDelay: "50ms" }}
+          ></div>
           <h1
-            className={`text-6xl md:text-7xl font-bold mb-8 leading-tight transform transition-all duration-1000 ${
+            className={`text-5xl md:text-6xl font-bold mb-8 leading-tight transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: "400ms" }}
+            style={{ transitionDelay: "50ms" }}
           >
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent inline-block hover:scale-105 transition-transform duration-500">
-            Stronger
+            <span className="text-gray-800 inline-block hover:scale-105 transition-transform duration-500">
+              Stronger
             </span>
             <br />
             <span
-              className="text-slate-800 inline-block"
-              style={{ animationDelay: "600ms" }}
+              className="text-gray-700 inline-block"
+              style={{ animationDelay: "50ms" }}
             >
               Together,
             </span>
             <br />
-            <span className="bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent inline-block hover:scale-105 transition-transform duration-500">
-            Beyond Campus
+            <span className="text-gray-900 inline-block hover:scale-105 transition-transform duration-500">
+              Beyond Campus
             </span>
           </h1>
           <p
-            className={`text-xl text-slate-600 mb-12 max-w-4xl mx-auto leading-relaxed transform transition-all duration-1000 ${
+            className={`text-xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: "800ms" }}
+            style={{ transitionDelay: "50ms" }}
           >
             Bridge the gap between alumni and educational institutions
             worldwide. Support the schools that shaped your journey with
@@ -344,63 +334,41 @@ const Landing = () => {
             that matters.
           </p>
           <div
-            className={`max-w-3xl mx-auto mb-16 transform transition-all duration-1000 ${
+            className={`max-w-3xl mx-auto mb-6 transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: "1000ms" }}
-          >
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300 animate-pulse"></div>
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/50 shadow-2xl shadow-blue-500/10 group-hover:shadow-blue-500/20 transition-all duration-500">
-                <Search className="absolute left-8 top-1/2 transform -translate-y-1/2 text-slate-400 h-6 w-6 group-hover:text-blue-500 transition-colors duration-300" />
-                <input
-                  type="text"
-                  placeholder="Search your school, college, or university..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-20 pr-40 py-7 text-lg rounded-3xl bg-transparent focus:outline-none text-slate-700 placeholder-slate-400 transition-all duration-300"
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch(e)}
-                />
-                <button
-                  onClick={handleSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-10 py-4 rounded-2xl hover:from-blue-600 hover:to-purple-600 flex items-center space-x-3 transition-all duration-300 shadow-lg shadow-blue-500/25 font-semibold hover:scale-105"
-                >
-                  <span>Search</span>
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                </button>
-              </div>
-            </div>
-          </div>
+            style={{ transitionDelay: "50ms" }}
+          ></div>
           <div
-            className={`flex flex-col sm:flex-row gap-6 justify-center items-center transform transition-all duration-1000 ${
+            className={`flex flex-col sm:flex-row gap-4 justify-center items-center transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
-            style={{ transitionDelay: "1200ms" }}
+            style={{ transitionDelay: "50ms" }}
           >
             <button
               onClick={() => navigate("/auth/signup/alumni")}
-              className="group bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white px-14 py-5 rounded-2xl text-lg font-semibold hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 flex items-center space-x-3 transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform"
+              className="group bg-gray-900 text-white px-10 py-4 rounded-xl text-base font-semibold hover:bg-gray-800 flex items-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             >
-              <GraduationCap className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+              <GraduationCap className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
               <span>I'm an Alumni</span>
             </button>
             <button
               onClick={() => navigate("/auth/signup/institution")}
-              className="group border-2 border-blue-200 bg-white/70 backdrop-blur-sm text-blue-700 px-14 py-5 rounded-2xl text-lg font-semibold hover:bg-blue-50 hover:border-blue-300 flex items-center space-x-3 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              className="group border border-gray-300 bg-white text-gray-800 px-10 py-4 rounded-xl text-base font-semibold hover:bg-gray-50 hover:border-gray-400 flex items-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             >
-              <Building className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-              <span>I'm a School</span>
+              <Building className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+              <span>I'm an Institution</span>
             </button>
           </div>
         </div>
       </section>
 
       <section
-        className="py-24 bg-white/80 backdrop-blur-sm border-y border-slate-200/50"
+        className="py-20 bg-white border-y border-gray-200"
         id="stats"
         data-animate
       >
@@ -408,12 +376,6 @@ const Landing = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => {
               const IconComponent = stat.icon;
-              const gradients = [
-                "from-blue-500 to-indigo-500",
-                "from-purple-500 to-blue-500",
-                "from-indigo-500 to-purple-500",
-                "from-blue-600 to-purple-500",
-              ];
               return (
                 <div
                   key={index}
@@ -425,14 +387,14 @@ const Landing = () => {
                   style={{ transitionDelay: `${index * 200}ms` }}
                 >
                   <div
-                    className={`w-20 h-20 bg-gradient-to-br ${gradients[index]} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                    className={`w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                   >
-                    <IconComponent className="h-10 w-10 text-white group-hover:scale-110 transition-transform duration-300" />
+                    <IconComponent className="h-8 w-8 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <div className="text-4xl font-bold text-slate-800 mb-3 group-hover:scale-105 transition-transform duration-300">
+                  <div className="text-3xl font-bold text-gray-900 mb-3 group-hover:scale-105 transition-transform duration-300">
                     {stat.number}
                   </div>
-                  <div className="text-slate-600 font-medium">{stat.label}</div>
+                  <div className="text-gray-600 font-medium">{stat.label}</div>
                 </div>
               );
             })}
@@ -440,60 +402,50 @@ const Landing = () => {
         </div>
       </section>
 
-      <section
-        id="how-it-works"
-        className="py-24 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50"
-        data-animate
-      >
+      <section id="how-it-works" className="py-20 bg-gray-100" data-animate>
         <div className="max-w-7xl mx-auto px-6">
           <div
-            className={`text-center mb-20 transform transition-all duration-1000 ${
+            className={`text-center mb-16 transform transition-all duration-1000 ${
               isVisible["how-it-works"]
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full px-6 py-3 border border-blue-200/50 shadow-lg shadow-blue-500/10 mb-6 hover:scale-105 transition-transform duration-300">
-              <Sparkles className="h-5 w-5 text-blue-600 animate-spin" />
-              <span className="text-sm font-semibold text-blue-700">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
+              <Sparkles className="h-5 w-5 text-gray-700 animate-spin" />
+              <span className="text-sm font-semibold text-gray-800">
                 Simple & Transparent Process
               </span>
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              How It{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Works
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+              How It <span className="text-gray-800">Works</span>
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               Simple, transparent, and impactful - connecting alumni with their
               schools through complete trust and accountability in educational
               giving
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-3 gap-10">
             {[
               {
                 icon: Search,
                 title: "Find Your School",
                 description:
                   "Search for your elementary school, high school, college, or university using our comprehensive database of educational institutions worldwide.",
-                gradient: "from-blue-500 to-indigo-500",
               },
               {
                 icon: Eye,
                 title: "Explore Their Needs",
                 description:
                   "Discover transparent funding requests with detailed project descriptions, photos, and real-time progress tracking for complete accountability.",
-                gradient: "from-purple-500 to-blue-500",
               },
               {
                 icon: Heart,
                 title: "Contribute & Connect",
                 description:
                   "Make secure contributions and stay connected with regular updates showing exactly how your support is making a meaningful difference.",
-                gradient: "from-indigo-500 to-purple-500",
               },
             ].map((step, index) => (
               <div
@@ -507,20 +459,20 @@ const Landing = () => {
               >
                 <div className="relative mb-8">
                   <div
-                    className={`w-24 h-24 bg-gradient-to-br ${step.gradient} rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                    className={`w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                   >
-                    <step.icon className="h-12 w-12 text-white group-hover:scale-110 transition-transform duration-300" />
+                    <step.icon className="h-10 w-10 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-blue-100 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-sm font-bold text-blue-600">
+                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-300 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-sm font-bold text-gray-800">
                       {index + 1}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-blue-700 transition-colors duration-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-gray-800 transition-colors duration-300">
                   {step.title}
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed">
                   {step.description}
                 </p>
               </div>
@@ -529,76 +481,69 @@ const Landing = () => {
         </div>
       </section>
 
-      <section
-        id="schools"
-        className="py-24 bg-white/80 backdrop-blur-sm"
-        data-animate
-      >
+      <section id="schools" className="py-20 bg-white" data-animate>
         <div className="max-w-7xl mx-auto px-6">
           <div
-            className={`text-center mb-20 transform transition-all duration-1000 ${
+            className={`text-center mb-16 transform transition-all duration-1000 ${
               isVisible.schools
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-6 py-3 border border-purple-200/50 shadow-lg shadow-purple-500/10 mb-6 hover:scale-105 transition-transform duration-300">
-              <Globe className="h-5 w-5 text-purple-600 animate-pulse" />
-              <span className="text-sm font-semibold text-purple-700">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
+              <Globe className="h-5 w-5 text-gray-700 animate-pulse" />
+              <span className="text-sm font-semibold text-gray-800">
                 Global Network
               </span>
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              Featured{" "}
-              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Schools
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+              Featured <span className="text-gray-800">Schools</span>
             </h2>
-            <p className="text-xl text-slate-600">
+            <p className="text-lg text-gray-600">
               Discover educational institutions worldwide seeking alumni support
             </p>
           </div>
 
           <div className="relative overflow-hidden">
-            <div ref={carouselRef} className="flex w-max gap-8 px-8">
+            <div ref={carouselRef} className="flex w-max gap-6 px-6">
               {featuredInstitutions.map((institution) => (
                 <div
                   key={institution.id}
-                  className="institution-card w-96 flex-shrink-0"
+                  className="institution-card w-80 flex-shrink-0"
                 >
-                  <div className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl overflow-hidden transition-all duration-500 border border-slate-200/50 hover:border-blue-200 transform">
+                  <div className="group bg-white rounded-xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300">
                     <div className="relative overflow-hidden">
                       <img
                         src={institution.image}
                         alt={institution.name}
-                        className="w-full h-56 object-cover transition-transform duration-700"
+                        className="w-full h-48 object-cover transition-transform duration-700"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent group-hover:from-slate-900/40 transition-all duration-500"></div>
-                      <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 border border-blue-200/50 shadow-lg animate-bounce">
-                        <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
+                      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1 border border-gray-300 shadow-sm">
+                        <span className="text-sm font-bold text-gray-800">
                           {institution.needs} active needs
                         </span>
                       </div>
                     </div>
-                    <div className="p-8">
-                      <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-blue-700 transition-colors duration-300">
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">
                         {institution.name}
                       </h3>
-                      <div className="flex items-center text-slate-600 mb-6">
-                        <MapPin className="h-5 w-5 mr-3 text-purple-500" />
+                      <div className="flex items-center text-gray-600 mb-5">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                         <span className="font-medium">
                           {institution.location}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center text-slate-600">
-                          <Users className="h-5 w-5 mr-3 text-blue-500" />
+                        <div className="flex items-center text-gray-600">
+                          <Users className="h-4 w-4 mr-2 text-gray-500" />
                           <span className="font-medium">
                             {institution.alumni} alumni
                           </span>
                         </div>
-                        <button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg shadow-blue-500/25 font-semibold group-hover:scale-105">
+                        <button className="bg-gray-800 text-white px-5 cursor-pointer py-2 rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold">
                           View Details
                         </button>
                       </div>
@@ -612,54 +557,51 @@ const Landing = () => {
       </section>
 
       <section
-        className="py-24 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
+        className="py-20 bg-gray-100"
         id="testimonials"
         data-animate
         onMouseEnter={() => setIsAutoPlaying(false)}
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6">
           <div
-            className={`text-center mb-20 transform transition-all duration-1000 ${
+            className={`text-center mb-16 transform transition-all duration-1000 ${
               isVisible.testimonials
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full px-6 py-3 border border-indigo-200/50 shadow-lg shadow-indigo-500/10 mb-6 hover:scale-105 transition-transform duration-300">
-              <Star className="h-5 w-5 text-indigo-600 animate-pulse" />
-              <span className="text-sm font-semibold text-indigo-700">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
+              <Star className="h-5 w-5 text-gray-700 animate-pulse" />
+              <span className="text-sm font-semibold text-gray-800">
                 Community Stories
               </span>
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold text-slate-800 mb-8">
-              Alumni{" "}
-              <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                Stories
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+              Alumni <span className="text-gray-800">Stories</span>
             </h2>
-            <p className="text-xl text-slate-600">
+            <p className="text-lg text-gray-600">
               Hear inspiring stories from our alumni and educational
               institutions
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div
-              className={`bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-500/10 p-10 md:p-16 text-center border border-slate-200/50 relative overflow-hidden transform transition-all duration-1000 ${
+              className={`bg-white rounded-xl shadow-sm p-8 md:p-12 text-center border border-gray-200 relative overflow-hidden transform transition-all duration-1000 ${
                 isVisible.testimonials
                   ? "translate-y-0 opacity-100"
                   : "translate-y-20 opacity-0"
               }`}
-              style={{ transitionDelay: "200ms" }}
+              style={{ transitionDelay: "50ms" }}
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gray-800"></div>
 
               <div className="flex justify-center mb-8">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-7 w-7 text-indigo-400 fill-current mx-1 transform transition-all duration-300 hover:scale-125`}
+                    className={`h-6 w-6 text-gray-500 fill-current mx-1 transform transition-all duration-300 hover:scale-125`}
                     style={{
                       animationDelay: `${i * 100}ms`,
                       animation: "twinkle 2s ease-in-out infinite",
@@ -668,7 +610,7 @@ const Landing = () => {
                 ))}
               </div>
 
-              <div className="relative h-64 flex items-center justify-center">
+              <div className="relative h-56 flex items-center justify-center">
                 {testimonials.map((testimonial, index) => (
                   <div
                     key={index}
@@ -680,14 +622,14 @@ const Landing = () => {
                         : "opacity-0 transform translate-x-full"
                     }`}
                   >
-                    <blockquote className="text-2xl md:text-3xl text-slate-700 mb-10 leading-relaxed font-medium">
+                    <blockquote className="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed font-medium">
                       "{testimonial.text}"
                     </blockquote>
-                    <div className="border-t border-slate-200 pt-8">
-                      <div className="font-bold text-xl text-slate-800 mb-2">
+                    <div className="border-t border-gray-200 pt-6">
+                      <div className="font-bold text-lg text-gray-900 mb-2">
                         {testimonial.author}
                       </div>
-                      <div className="text-slate-600 font-medium">
+                      <div className="text-gray-600 font-medium">
                         {testimonial.batch}
                       </div>
                     </div>
@@ -696,15 +638,15 @@ const Landing = () => {
               </div>
             </div>
 
-            <div className="flex justify-center mt-10 space-x-3">
+            <div className="flex justify-center mt-8 space-x-2">
               {testimonials.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentTestimonial(index)}
-                  className={`w-4 h-4 rounded-full transition-all duration-300 hover:scale-125 ${
+                  className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
                     index === currentTestimonial
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 scale-125 shadow-lg"
-                      : "bg-slate-300 hover:bg-slate-400"
+                      ? "bg-gray-800 scale-125 shadow-sm"
+                      : "bg-gray-300 hover:bg-gray-400"
                   }`}
                 />
               ))}
@@ -714,67 +656,56 @@ const Landing = () => {
       </section>
 
       <section
-        className="py-24 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 relative overflow-hidden"
+        className="py-20 bg-gray-900 relative overflow-hidden"
         id="cta"
         data-animate
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-800/20 to-gray-900/20"></div>
 
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
+          <div className="absolute top-10 left-10 w-16 h-16 bg-gray-700/20 rounded-full animate-pulse"></div>
           <div
-            className="absolute top-1/2 right-20 w-32 h-32 bg-white/5 rounded-full"
+            className="absolute top-1/2 right-16 w-24 h-24 bg-gray-700/10 rounded-full"
             style={{ animation: "float 8s ease-in-out infinite" }}
           ></div>
-          <div className="absolute bottom-20 left-1/3 w-16 h-16 bg-white/10 rounded-full animate-bounce"></div>
+          <div className="absolute bottom-16 left-1/3 w-12 h-12 bg-gray-700/20 rounded-full animate-bounce"></div>
         </div>
 
         <div
-          className={`max-w-6xl mx-auto px-6 text-center relative z-10 transform transition-all duration-1000 ${
+          className={`max-w-5xl mx-auto px-6 text-center relative z-10 transform transition-all duration-1000 ${
             isVisible.cta
               ? "translate-y-0 opacity-100"
               : "translate-y-20 opacity-0"
           }`}
         >
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8 hover:scale-105 transition-transform duration-500">
-            Ready to Make a <span className="text-indigo-200">Difference</span>?
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-50 mb-8">
+            Ready to Make a <span className="text-gray-300">Difference</span>?
           </h2>
-          <p className="text-xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg text-gray-300 mb-6 max-w-3xl mx-auto leading-relaxed">
             Join thousands of alumni supporting education worldwide. Every
             contribution counts in shaping the future of students and
             strengthening educational institutions across the globe.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button className="group bg-white text-blue-700 px-14 py-5 rounded-2xl text-lg font-semibold hover:bg-indigo-50 transition-all duration-300 shadow-2xl hover:shadow-white/25 hover:scale-105 flex items-center space-x-3 transform">
-              <Heart className="h-6 w-6 group-hover:scale-110 group-hover:text-red-500 transition-all duration-300" />
-              <span>Start Contributing Today</span>
-            </button>
-            <button className="group border-2 border-white text-white px-14 py-5 rounded-2xl text-lg font-semibold hover:bg-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 flex items-center space-x-3">
-              <Building className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-              <span>Register Your School</span>
-            </button>
-          </div>
         </div>
       </section>
 
-      <footer className="bg-slate-900 text-white py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-800/50 to-slate-900/50"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid md:grid-cols-4 gap-12">
+      <footer className="bg-gray-900 text-gray-50 py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50"></div>
+        <div className="w-full relative z-10 px-6">
+          <div className="grid md:grid-cols-4 gap-10">
             <div className="group">
               <div className="flex items-center space-x-3 mb-8">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                  <GraduationCap className="h-6 w-6 text-white" />
+                <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <GraduationCap className="h-5 w-5 text-gray-900" />
                 </div>
                 <div>
-                  <span className="text-xl font-bold">Alumni Connect</span>
-                  <div className="text-sm text-slate-400">
+                  <span className="text-lg font-bold">Alumni Connect</span>
+                  <div className="text-sm text-gray-400">
                     Support & Give Back
                   </div>
                 </div>
               </div>
-              <p className="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">
+              <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
                 Connecting graduates with their educational institutions
                 worldwide, fostering support and creating lasting impact through
                 transparent giving.
@@ -782,10 +713,10 @@ const Landing = () => {
             </div>
 
             <div className="group">
-              <h3 className="text-lg font-semibold mb-6 text-indigo-300 group-hover:text-indigo-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 For Alumni
               </h3>
-              <ul className="space-y-3 text-slate-400">
+              <ul className="space-y-3 text-gray-400">
                 {[
                   "Find Your School",
                   "Browse Projects",
@@ -795,7 +726,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-white transition-all duration-300 hover:text-indigo-300 hover:translate-x-2 transform inline-block"
+                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -806,10 +737,10 @@ const Landing = () => {
             </div>
 
             <div className="group">
-              <h3 className="text-lg font-semibold mb-6 text-indigo-300 group-hover:text-indigo-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 For Schools
               </h3>
-              <ul className="space-y-3 text-slate-400">
+              <ul className="space-y-3 text-gray-400">
                 {[
                   "Register School",
                   "Create Projects",
@@ -819,7 +750,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-white transition-all duration-300 hover:text-indigo-300 hover:translate-x-2 transform inline-block"
+                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -830,10 +761,10 @@ const Landing = () => {
             </div>
 
             <div className="group">
-              <h3 className="text-lg font-semibold mb-6 text-indigo-300 group-hover:text-indigo-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 Support
               </h3>
-              <ul className="space-y-3 text-slate-400">
+              <ul className="space-y-3 text-gray-400">
                 {[
                   "Help Center",
                   "Contact Us",
@@ -843,7 +774,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-white transition-all duration-300 hover:text-indigo-300 hover:translate-x-2 transform inline-block"
+                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -854,9 +785,9 @@ const Landing = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 mt-16 pt-10 text-center text-slate-400">
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
             <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="mb-4 md:mb-0 hover:text-slate-300 transition-colors duration-300">
+              <p className="mb-4 md:mb-0 hover:text-gray-300 transition-colors duration-300">
                 &copy; 2025 Alumni Connect. All rights reserved.
               </p>
             </div>
@@ -871,7 +802,7 @@ const Landing = () => {
             transform: translateY(0px) rotate(0deg);
           }
           50% {
-            transform: translateY(-20px) rotate(5deg);
+            transform: translateY(-10px) rotate(3deg);
           }
         }
 
