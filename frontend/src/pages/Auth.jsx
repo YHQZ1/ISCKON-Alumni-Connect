@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Auth = () => {
   const [userType, setUserType] = useState(() => {
@@ -120,19 +121,43 @@ const Auth = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setIsLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        graduationYear: formData.graduationYear,
+        institutionName: formData.institutionName,
+        location: formData.location,
+        userType,
+      };
 
-    setIsLoading(false);
-    console.log("Form submitted:", { ...formData, userType });
+      const endpoint = isSignUp ? "/api/auth/signup" : "/api/auth/login";
 
-    alert(
-      isSignUp ? "Account created successfully!" : "Signed in successfully!"
-    );
+      const response = await axios.post(
+        `http://localhost:4000${endpoint}`,
+        payload
+      );
+
+      const { token, user } = response.data;
+
+      // Store JWT in localStorage
+      localStorage.setItem("jwtToken", token);
+
+      setIsLoading(false);
+
+      // Redirect after login/signup
+      navigate("/alumni/home");
+    } catch (error) {
+      setIsLoading(false);
+      console.error(error);
+      alert(error.response?.data?.message || "Something went wrong");
+    }
   };
 
   const toggleAuthMode = () => {
@@ -594,7 +619,6 @@ const Auth = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  onClick={() => navigate("/alumni/home")}
                   className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white py-4 rounded-2xl font-semibold text-lg hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-3"
                 >
                   {isLoading ? (

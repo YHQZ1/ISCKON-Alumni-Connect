@@ -50,3 +50,7 @@ coverage/
 
 # Test output
 *.test-results.xml
+
+#env
+.env
+.env.*
