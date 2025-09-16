@@ -13,6 +13,7 @@ import {
   Sparkles,
   BookOpen,
   Shield,
+  LogOut,
   User,
   Bell,
   Settings,
@@ -32,12 +33,14 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const InstituteHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const observerRef = useRef();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("needs");
 
   // Mock institution data
@@ -217,6 +220,11 @@ const InstituteHomePage = () => {
     }px, ${(mousePosition.y - window.innerHeight / 2) * strength * 0.01}px)`,
   });
 
+  const handleLogout = () => {
+    localStorage.removeItem("jwtToken");
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Background Elements */}
@@ -245,6 +253,7 @@ const InstituteHomePage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-6">
           <div className="flex justify-between items-center h-18">
+            {/* Left - Branding */}
             <div className="flex items-center space-x-4 group">
               <div className="relative">
                 <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md">
@@ -261,12 +270,13 @@ const InstituteHomePage = () => {
               </div>
             </div>
 
+            {/* Right - Actions */}
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
 
-              <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer">
+              <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
                 <img
                   src={currentInstitution.logo}
                   alt={currentInstitution.name}
@@ -280,6 +290,14 @@ const InstituteHomePage = () => {
                 </div>
                 <Settings className="h-5 w-5 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-10 cursor-pointer h-10 rounded-2xl bg-white/50 backdrop-blur-md border border-gray-200 shadow-sm hover:shadow-md hover:bg-red-100 transition-all duration-300"
+              >
+                <LogOut className="h-5 w-5 text-gray-600 hover:text-red-600 transition-colors" />
+              </button>
             </div>
           </div>
         </div>

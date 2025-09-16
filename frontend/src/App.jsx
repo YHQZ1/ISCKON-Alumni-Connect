@@ -14,30 +14,32 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* Public routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/signup/:userType" element={<Auth />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<NotFound />} />
 
-          {/* Protected routes */}
+          {/* Alumni only */}
           <Route
             path="/alumni/home"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["alumni"]}>
                 <AlumniHomePage />
               </ProtectedRoute>
             }
           />
+
+          {/* Institute only */}
           <Route
             path="/institute/home"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["institute"]}>
                 <InstituteHomePage />
               </ProtectedRoute>
             }
           />
+
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </Router>

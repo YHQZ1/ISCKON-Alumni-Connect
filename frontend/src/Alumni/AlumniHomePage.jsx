@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Eye,
   Sparkles,
+  LogOut,
   BookOpen,
   Shield,
   User,
@@ -24,8 +25,9 @@ import {
   Award,
   ChevronRight,
   Filter,
-  SortDesc
+  SortDesc,
 } from "lucide-react";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const AlumniHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,6 +39,7 @@ const AlumniHomePage = () => {
   const carouselRef = useRef(null);
   const animationRef = useRef(null);
   const [carouselSpeed] = useState(0.1);
+  const navigate = useNavigate();
 
   // Mock user data
   const currentUser = {
@@ -224,6 +227,11 @@ const AlumniHomePage = () => {
     console.log("Searching for:", searchQuery);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("jwtToken");
+    navigate("/");
+  };
+
   const parallaxOffset = (strength = 0.5) => ({
     transform: `translate(${
       (mousePosition.x - window.innerWidth / 2) * strength * 0.01
@@ -303,7 +311,7 @@ const AlumniHomePage = () => {
               </div>
 
               <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer">
-              <User className="w-8 h-8 text-gray-400 rounded-full border p-1" />
+                <User className="w-8 h-8 text-gray-400 rounded-full border p-1" />
                 <div className="text-right">
                   <div className="text-sm font-semibold text-gray-800">
                     {currentUser.name}
@@ -314,6 +322,12 @@ const AlumniHomePage = () => {
                 </div>
                 <Settings className="h-5 w-5 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-10 cursor-pointer h-10 rounded-2xl bg-white/50 backdrop-blur-md border border-gray-200 shadow-sm hover:shadow-md hover:bg-red-100 transition-all duration-300"
+              >
+                <LogOut className="h-5 w-5 text-gray-600 hover:text-red-600 transition-colors" />
+              </button>
             </div>
           </div>
         </div>
@@ -497,7 +511,7 @@ const AlumniHomePage = () => {
 
       {/* Featured Institutions */}
       <section id="institutions" className="py-16 bg-gray-100" data-animate>
-      <div className="max-w-screen-2xl mx-auto px-10">
+        <div className="max-w-screen-2xl mx-auto px-10">
           <div
             className={`text-center mb-12 transform transition-all duration-1000 ${
               isVisible.institutions
