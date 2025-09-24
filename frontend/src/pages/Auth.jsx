@@ -11,6 +11,10 @@ import {
   Building,
   MapPin,
   Shield,
+  Phone,
+  Globe,
+  FileText,
+  Hash,
   X,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -29,10 +33,23 @@ const Auth = () => {
     confirmPassword: "",
     phone: "",
     institutionName: "",
+    displayName: "",
+    registrationNumber: "",
+    street: "",
+    city: "",
+    state: "",
+    pincode: "",
+    country: "India",
+    contactPersonName: "",
+    contactEmail: "",
+    contactPhone: "",
+    website: "",
+    description: "",
     graduationYear: "",
     location: "",
     agreeToTerms: false,
   });
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -90,17 +107,28 @@ const Auth = () => {
         newErrors.firstName = "First name is required";
       if (!formData.lastName.trim())
         newErrors.lastName = "Last name is required";
-      if (userType === "institution" && !formData.institutionName.trim()) {
-        newErrors.institutionName = "Institution name is required";
+
+      if (userType === "institution") {
+        if (!formData.institutionName.trim()) {
+          newErrors.institutionName = "Institution name is required";
+        }
+        if (!formData.city.trim()) {
+          newErrors.city = "City is required";
+        }
       }
+
       if (userType === "alumni" && !formData.graduationYear) {
         newErrors.graduationYear = "Graduation year is required";
       }
-      if (!formData.location.trim())
+
+      if (!formData.location.trim()) {
         newErrors.location = "Location is required";
+      }
+
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "Passwords don't match";
       }
+
       if (!formData.agreeToTerms) {
         newErrors.agreeToTerms = "Please agree to the terms and conditions";
       }
@@ -152,10 +180,41 @@ const Auth = () => {
       // Store JWT in localStorage
       localStorage.setItem("jwtToken", token);
 
+      // ADD THIS: Create school record if user is institution
+      if (isSignUp && userType === "institution") {
+        const schoolPayload = {
+          name: formData.institutionName,
+          display_name: formData.displayName || formData.institutionName,
+          registration_number: formData.registrationNumber,
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          country: formData.country,
+          contact_person_name:
+            formData.contactPersonName ||
+            `${formData.firstName} ${formData.lastName}`,
+          contact_email: formData.contactEmail || formData.email,
+          contact_phone: formData.contactPhone || formData.phone,
+          website: formData.website,
+          description: formData.description,
+        };
+
+        await axios.post("http://localhost:4000/api/schools", schoolPayload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+
       setIsLoading(false);
 
-      // Redirect after login/signup
-      navigate("/alumni/home");
+      // Redirect based on user type
+      if (userType === "institution") {
+        navigate("/institute/home");
+      } else {
+        navigate("/alumni/home");
+      }
     } catch (error) {
       setIsLoading(false);
 
@@ -192,6 +251,18 @@ const Auth = () => {
       confirmPassword: "",
       phone: "",
       institutionName: "",
+      displayName: "",
+      registrationNumber: "",
+      street: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+      contactPersonName: "",
+      contactEmail: "",
+      contactPhone: "",
+      website: "",
+      description: "",
       graduationYear: "",
       location: "",
       agreeToTerms: false,
@@ -418,31 +489,219 @@ const Auth = () => {
                 )}
 
                 {isSignUp && userType === "institution" && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Institution Name
-                    </label>
-                    <div className="relative">
-                      <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                      <input
-                        type="text"
-                        name="institutionName"
-                        value={formData.institutionName}
-                        onChange={handleInputChange}
-                        className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                          errors.institutionName
-                            ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                            : "border-gray-300"
-                        }`}
-                        placeholder="Enter institution name"
-                      />
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Institution Legal Name *
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <input
+                          type="text"
+                          name="institutionName"
+                          value={formData.institutionName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                            errors.institutionName
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Enter legal institution name"
+                        />
+                      </div>
+                      {errors.institutionName && (
+                        <p className="text-rose-500 text-sm mt-1">
+                          {errors.institutionName}
+                        </p>
+                      )}
                     </div>
-                    {errors.institutionName && (
-                      <p className="text-rose-500 text-sm mt-1">
-                        {errors.institutionName}
-                      </p>
-                    )}
-                  </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Display Name
+                        </label>
+                        <div className="relative">
+                          <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <input
+                            type="text"
+                            name="displayName"
+                            value={formData.displayName}
+                            onChange={handleInputChange}
+                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                            placeholder="Public display name"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Registration Number
+                        </label>
+                        <div className="relative">
+                          <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <input
+                            type="text"
+                            name="registrationNumber"
+                            value={formData.registrationNumber}
+                            onChange={handleInputChange}
+                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                            placeholder="Registration number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Street Address
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <input
+                          type="text"
+                          name="street"
+                          value={formData.street}
+                          onChange={handleInputChange}
+                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="Street address"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                            errors.city
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="City"
+                        />
+                        {errors.city && (
+                          <p className="text-rose-500 text-sm mt-1">
+                            {errors.city}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="State"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Pincode
+                        </label>
+                        <input
+                          type="text"
+                          name="pincode"
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="Pincode"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Country
+                        </label>
+                        <select
+                          name="country"
+                          value={formData.country}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                        >
+                          <option value="India">India</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Contact Person Name
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <input
+                            type="text"
+                            name="contactPersonName"
+                            value={formData.contactPersonName}
+                            onChange={handleInputChange}
+                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                            placeholder="Contact person name"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Contact Phone
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <input
+                            type="tel"
+                            name="contactPhone"
+                            value={formData.contactPhone}
+                            onChange={handleInputChange}
+                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                            placeholder="Contact phone number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Website
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <input
+                          type="url"
+                          name="website"
+                          value={formData.website}
+                          onChange={handleInputChange}
+                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Institution Description
+                      </label>
+                      <div className="relative">
+                        <FileText className="absolute left-4 top-4 text-gray-500 h-5 w-5" />
+                        <textarea
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          rows={3}
+                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="Brief description of your institution"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div>
