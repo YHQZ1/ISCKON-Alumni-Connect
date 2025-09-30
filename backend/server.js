@@ -12,12 +12,20 @@ import schoolRoutes from "./src/routes/schoolRoutes.js"; // protected school cre
 import authenticateToken from "./src/middleware/authenticateToken.js";
 import errorHandler from "./src/middleware/errorMiddleware.js";
 
+
+import campaignRoutes from "./src/routes/campaignRoutes.js";
+import donationRoutes from "./src/routes/donationRoutes.js";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Public auth routes
 app.use("/api/auth", authRoutes);
+
+// public & protected routing (example pattern used in your app)
+app.use("/api/campaigns", campaignRoutes);
+app.use("/api/donations", donationRoutes);
 
 // Protect all user routes with JWT auth
 app.use("/api/users", authenticateToken, userRoutes);

@@ -157,16 +157,21 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const payload = {
-        email: formData.email,
-        password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        graduationYear: formData.graduationYear,
-        institutionName: formData.institutionName,
-        location: formData.location,
-        userType,
-      };
+      const payload = isSignUp
+        ? {
+            email: formData.email,
+            password: formData.password,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            graduationYear: formData.graduationYear,
+            institutionName: formData.institutionName,
+            location: formData.location,
+            userType, // only needed during signup
+          }
+        : {
+            email: formData.email,
+            password: formData.password, // login only needs these
+          };
 
       const endpoint = isSignUp ? "/api/auth/signup" : "/api/auth/login";
 
@@ -210,7 +215,7 @@ const Auth = () => {
       setIsLoading(false);
 
       // Redirect based on user type
-      if (userType === "institution") {
+      if (user.user_type === "institution") {
         navigate("/institute/home");
       } else {
         navigate("/alumni/home");
