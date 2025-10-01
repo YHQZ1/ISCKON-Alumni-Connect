@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const InstituteDetails = () => {
   const { id } = useParams();
