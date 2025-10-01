@@ -5,6 +5,7 @@ import Auth from "./pages/Auth";
 import AlumniHomePage from "./Alumni/AlumniHomePage";
 import InstituteHomePage from "./Institute/InstituteHomePage";
 import AlumniProfile from "./Alumni/AlumniProfile";
+import InstituteProfile from "./Institute/InstituteProfile";
 
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
@@ -45,6 +46,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["institution"]}>
                 <InstituteHomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/institute/profile"
+            element={
+              <ProtectedRoute allowedRoles={["institution"]}>
+                <InstituteProfile />
               </ProtectedRoute>
             }
           />

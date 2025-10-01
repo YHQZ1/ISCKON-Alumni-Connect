@@ -296,6 +296,14 @@ const AlumniHomePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading data...</p>
+          </div>
+        </div>
+      )}
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
@@ -330,7 +338,7 @@ const AlumniHomePage = () => {
               </div>
               <div>
                 <span className="text-2xl font-bold text-gray-900">
-                  Alumni Connect
+                  Alumni Portal
                 </span>
                 <div className="text-sm text-gray-600 font-medium">
                   Support & Give Back
