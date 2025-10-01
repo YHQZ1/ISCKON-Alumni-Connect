@@ -17,6 +17,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
+
 const AlumniProfile = () => {
   const [profileData, setProfileData] = useState({
     first_name: "",
@@ -51,7 +53,7 @@ const AlumniProfile = () => {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
-      const response = await axios.get("http://localhost:4000/api/users/me", {
+      const response = await axios.get(`${BASE_URL}/api/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -122,7 +124,7 @@ const AlumniProfile = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
       const response = await axios.put(
-        "http://localhost:4000/api/users/me",
+        `${BASE_URL}/api/users/me`,
         {
           first_name: profileData.first_name,
           last_name: profileData.last_name,
@@ -154,7 +156,7 @@ const AlumniProfile = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
       await axios.post(
-        "http://localhost:4000/api/users/change-password",
+        `${BASE_URL}/api/users/change-password`,
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,

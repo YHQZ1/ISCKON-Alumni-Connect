@@ -4,26 +4,23 @@ import {
   ArrowLeft,
   Heart,
   MapPin,
-  Users,
   Calendar,
   Target,
-  DollarSign,
   Clock,
   CheckCircle,
   TrendingUp,
   Share2,
   BookOpen,
-  GraduationCap,
-  Building,
   Globe,
   Phone,
   Mail,
   ExternalLink,
   Eye,
-  BarChart3,
   UsersRound
 } from "lucide-react";
 import axios from "axios";
+
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
 
 const InstituteDetails = () => {
   const { id } = useParams();
@@ -46,13 +43,13 @@ const InstituteDetails = () => {
       const token = localStorage.getItem("jwtToken");
       
       // Fetch school details
-      const schoolResponse = await axios.get(`http://localhost:4000/api/schools/${id}`, {
+      const schoolResponse = await axios.get(`${BASE_URL}/api/schools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // Fetch campaigns for this school
       const campaignsResponse = await axios.get(
-        `http://localhost:4000/api/campaigns?school_id=${id}`,
+        `${BASE_URL}/api/campaigns?school_id=${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

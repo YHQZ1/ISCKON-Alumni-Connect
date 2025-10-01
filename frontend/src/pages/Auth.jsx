@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   GraduationCap,
-  Sparkles,
   Eye,
   EyeOff,
   ArrowRight,
@@ -20,6 +19,8 @@ import {
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
 
 const Auth = () => {
   const [message, setMessage] = useState("");
@@ -104,25 +105,40 @@ const Auth = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Base required fields for all users
-    const requiredFields = ["email", "password", "confirmPassword"];
+    // Always required
+    const requiredFields = ["email", "password"];
 
-    if (userType === "alumni") {
-      requiredFields.push("firstName", "lastName", "graduationYear", "phone");
-    }
+    // Only add signup-specific fields if signing up
+    if (isSignUp) {
+      requiredFields.push("confirmPassword");
 
-    if (userType === "institution") {
-      requiredFields.push(
-        "institutionName",
-        "displayName",
-        "registrationNumber",
-        "phone",
-        "street",
-        "city",
-        "contactPersonName",
-        "contactPhone",
-        "logo"
-      );
+      if (userType === "alumni") {
+        requiredFields.push(
+          "firstName",
+          "lastName",
+          "graduationYear",
+          "phone",
+          "email" // already included, safe to leave
+        );
+      }
+
+      if (userType === "institution") {
+        requiredFields.push(
+          "institutionName",
+          "displayName",
+          "registrationNumber",
+          "phone",
+          "street",
+          "city",
+          "state", // added
+          "pincode", // added
+          "contactPersonName",
+          "contactEmail", // added
+          "contactPhone",
+          "logo"
+          // "website" optional depending on requirements
+        );
+      }
     }
 
     // Validate required fields
@@ -135,23 +151,23 @@ const Auth = () => {
       }
     });
 
-    // Password length
-    if (formData.password && formData.password.length < 6) {
+    // Password length (signup only)
+    if (isSignUp && formData.password && formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Password match
-    if (formData.password !== formData.confirmPassword) {
+    // Password match (signup only)
+    if (isSignUp && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords don't match";
     }
 
-    // Terms checkbox
+    // Terms checkbox (signup only)
     if (isSignUp && !formData.agreeToTerms) {
       newErrors.agreeToTerms = "Please agree to the terms and conditions";
     }
 
-    // Logo validation (only for institution)
-    if (userType === "institution" && formData.logo) {
+    // Logo validation (signup only)
+    if (isSignUp && userType === "institution" && formData.logo) {
       if (!["image/jpeg", "image/png"].includes(formData.logo.type)) {
         newErrors.logo = "Logo must be a JPEG or PNG image";
       }
@@ -160,7 +176,7 @@ const Auth = () => {
       }
     }
 
-    // Email format
+    // Email format (always)
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email";
     }
@@ -211,7 +227,7 @@ const Auth = () => {
       const endpoint = isSignUp ? "/api/auth/signup" : "/api/auth/login";
 
       const response = await axios.post(
-        `http://localhost:4000${endpoint}`,
+        `${BASE_URL}${endpoint}`,
         isSignUp
           ? formDataToSend
           : {
@@ -284,7 +300,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-hidden flex items-start justify-center relative">
+    <div className="min-h-screen bg-gray-50 overflow-hidden flex items-center justify-center relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
@@ -342,7 +358,7 @@ const Auth = () => {
         </div>
       </nav>
 
-      <div className="w-full max-w-6xl mx-auto px-0 pt-24 pb-12 relative z-10">
+      <div className="w-full max-w-6xl mx-auto px-6 pt-24 pb-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-8 hover:scale-105 transition-transform duration-300">
@@ -512,16 +528,16 @@ const Auth = () => {
                             value={formData.institutionName}
                             onChange={handleInputChange}
                             className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                              errors.institutionName
+                              errors.firstName
                                 ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                 : "border-gray-300"
                             }`}
-                            placeholder="Enter legal institution name"
+                            placeholder="Enter your first name"
                           />
                         </div>
-                        {errors.institutionName && (
+                        {errors.firstName && (
                           <p className="text-rose-500 text-sm mt-1">
-                            {errors.institutionName}
+                            {errors.firstName}
                           </p>
                         )}
                       </div>
@@ -541,16 +557,16 @@ const Auth = () => {
                               value={formData.displayName}
                               onChange={handleInputChange}
                               className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.displayName
+                                errors.firstName
                                   ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                   : "border-gray-300"
                               }`}
-                              placeholder="Public display name"
+                              placeholder="Enter your first name"
                             />
                           </div>
-                          {errors.displayName && (
+                          {errors.firstName && (
                             <p className="text-rose-500 text-sm mt-1">
-                              {errors.displayName}
+                              {errors.firstName}
                             </p>
                           )}
                         </div>
@@ -568,16 +584,16 @@ const Auth = () => {
                               value={formData.registrationNumber}
                               onChange={handleInputChange}
                               className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.displayName
+                                errors.firstName
                                   ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                   : "border-gray-300"
                               }`}
-                              placeholder="Registration number"
+                              placeholder="Enter your first name"
                             />
                           </div>
-                          {errors.displayName && (
+                          {errors.firstName && (
                             <p className="text-rose-500 text-sm mt-1">
-                              {errors.displayName}
+                              {errors.firstName}
                             </p>
                           )}
                         </div>
@@ -595,13 +611,17 @@ const Auth = () => {
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                          placeholder="Enter phone number"
+                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                            errors.firstName
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Enter your first name"
                         />
                       </div>
-                      {errors.displayName && (
+                      {errors.firstName && (
                         <p className="text-rose-500 text-sm mt-1">
-                          {errors.displayName}
+                          {errors.firstName}
                         </p>
                       )}
                     </div>
@@ -617,13 +637,17 @@ const Auth = () => {
                           name="street"
                           value={formData.street}
                           onChange={handleInputChange}
-                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                          placeholder="Street address"
+                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                            errors.firstName
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Enter your first name"
                         />
                       </div>
-                      {errors.displayName && (
+                      {errors.firstName && (
                         <p className="text-rose-500 text-sm mt-1">
-                          {errors.displayName}
+                          {errors.firstName}
                         </p>
                       )}
                     </div>
@@ -707,16 +731,16 @@ const Auth = () => {
                               value={formData.contactPersonName}
                               onChange={handleInputChange}
                               className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.displayName
+                                errors.firstName
                                   ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                   : "border-gray-300"
                               }`}
-                              placeholder="Contact person name"
+                              placeholder="Enter your first name"
                             />
                           </div>
-                          {errors.displayName && (
+                          {errors.firstName && (
                             <p className="text-rose-500 text-sm mt-1">
-                              {errors.displayName}
+                              {errors.firstName}
                             </p>
                           )}
                         </div>
@@ -732,16 +756,16 @@ const Auth = () => {
                               value={formData.contactPhone}
                               onChange={handleInputChange}
                               className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.displayName
+                                errors.firstName
                                   ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                   : "border-gray-300"
                               }`}
-                              placeholder="Contact phone number"
+                              placeholder="Enter your first name"
                             />
                           </div>
-                          {errors.displayName && (
+                          {errors.firstName && (
                             <p className="text-rose-500 text-sm mt-1">
-                              {errors.displayName}
+                              {errors.firstName}
                             </p>
                           )}
                         </div>
@@ -761,15 +785,16 @@ const Auth = () => {
                             accept="image/jpeg,image/png"
                             onChange={handleInputChange}
                             className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                              errors.logo
+                              errors.firstName
                                 ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                 : "border-gray-300"
                             }`}
+                            placeholder="Enter your first name"
                           />
                         </div>
-                        {errors.logo && (
+                        {errors.firstName && (
                           <p className="text-rose-500 text-sm mt-1">
-                            {errors.logo}
+                            {errors.firstName}
                           </p>
                         )}
                       </div>

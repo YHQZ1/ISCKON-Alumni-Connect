@@ -10,16 +10,11 @@ import {
   Globe,
   GraduationCap,
   Eye,
-  Sparkles,
   LogOut,
-  BookOpen,
-  Shield,
   User,
   Bell,
   Settings,
-  History,
   TrendingUp,
-  Calendar,
   DollarSign,
   Target,
   Award,
@@ -29,6 +24,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
 
 const AlumniHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,7 +90,7 @@ const AlumniHomePage = () => {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
-      const response = await axios.get("http://localhost:4000/api/users/me", {
+      const response = await axios.get(`${BASE_URL}/api/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -127,10 +124,10 @@ const AlumniHomePage = () => {
 
       // Fetch both schools and campaigns in parallel
       const [schoolsResponse, campaignsResponse] = await Promise.all([
-        axios.get("http://localhost:4000/api/schools", {
+        axios.get(`${BASE_URL}/api/schools`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("http://localhost:4000/api/campaigns", {
+        axios.get(`${BASE_URL}/api/campaigns`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

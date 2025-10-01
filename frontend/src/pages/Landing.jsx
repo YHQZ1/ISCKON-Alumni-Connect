@@ -5,14 +5,11 @@ import {
   MapPin,
   Users,
   Building,
-  ArrowRight,
   Star,
   Globe,
   GraduationCap,
   Eye,
   Sparkles,
-  BookOpen,
-  Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 

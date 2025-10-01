@@ -19,6 +19,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
+
 const InstituteHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isVisible, setIsVisible] = useState({});
@@ -88,7 +90,7 @@ const InstituteHomePage = () => {
       try {
         const token = localStorage.getItem("jwtToken");
         const response = await axios.get(
-          `http://localhost:4000/api/donations?school_id=${currentInstitution?.schoolId}`,
+          `${BASE_URL}/api/donations?school_id=${currentInstitution?.schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setRecentDonations(response.data.donations || []);
@@ -109,7 +111,7 @@ const InstituteHomePage = () => {
 
       // Fetch user data to get institution info
       const userResponse = await axios.get(
-        "http://localhost:4000/api/users/me",
+        `${BASE_URL}/api/users/me`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -119,7 +121,7 @@ const InstituteHomePage = () => {
 
       // Fetch user's schools
       const schoolsResponse = await axios.get(
-        "http://localhost:4000/api/schools",
+        `${BASE_URL}/api/schools`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -140,7 +142,7 @@ const InstituteHomePage = () => {
 
       // Fetch campaigns for this school
       const campaignsResponse = await axios.get(
-        `http://localhost:4000/api/campaigns?school_id=${userSchool.id}`,
+        `${BASE_URL}/api/campaigns?school_id=${userSchool.id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -287,7 +289,7 @@ const InstituteHomePage = () => {
 
       // REAL API CALL - Create campaign in database
       const response = await axios.post(
-        "http://localhost:4000/api/campaigns",
+        `${BASE_URL}/api/campaigns`,
         {
           school_id: currentInstitution.schoolId,
           title: newNeedData.title,
@@ -308,7 +310,7 @@ const InstituteHomePage = () => {
 
       // Refresh the funding needs list from backend
       const campaignsResponse = await axios.get(
-        `http://localhost:4000/api/campaigns?school_id=${currentInstitution.schoolId}`,
+        `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

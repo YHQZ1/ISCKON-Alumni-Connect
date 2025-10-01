@@ -19,6 +19,8 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.BACKEND_URL || "http://localhost:4000";
+
 const InstituteProfile = () => {
   const [schoolData, setSchoolData] = useState({
     name: "",
@@ -52,7 +54,7 @@ const InstituteProfile = () => {
   const fetchSchool = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
-      const response = await axios.get(`http://localhost:4000/api/schools/${id}`, {
+      const response = await axios.get(`${BASE_URL}/api/schools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -90,7 +92,7 @@ const InstituteProfile = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
       const response = await axios.put(
-        `http://localhost:4000/api/schools/${id}`,
+        `${BASE_URL}/api/schools/${id}`,
         schoolData,
         {
           headers: { Authorization: `Bearer ${token}` },
