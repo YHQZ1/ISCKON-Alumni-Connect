@@ -16,6 +16,7 @@ import {
   FileText,
   Hash,
   X,
+  Image,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -46,8 +47,8 @@ const Auth = () => {
     website: "",
     description: "",
     graduationYear: "",
-    location: "",
     agreeToTerms: false,
+    logo: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -85,10 +86,11 @@ const Auth = () => {
   });
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked, files } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox" ? checked : type === "file" ? files[0] : value,
     }));
 
     if (errors[name]) {
@@ -102,48 +104,65 @@ const Auth = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (isSignUp) {
-      if (!formData.firstName.trim())
-        newErrors.firstName = "First name is required";
-      if (!formData.lastName.trim())
-        newErrors.lastName = "Last name is required";
+    // Base required fields for all users
+    const requiredFields = ["email", "password", "confirmPassword"];
 
-      if (userType === "institution") {
-        if (!formData.institutionName.trim()) {
-          newErrors.institutionName = "Institution name is required";
-        }
-        if (!formData.city.trim()) {
-          newErrors.city = "City is required";
-        }
-      }
-
-      if (userType === "alumni" && !formData.graduationYear) {
-        newErrors.graduationYear = "Graduation year is required";
-      }
-
-      if (!formData.location.trim()) {
-        newErrors.location = "Location is required";
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords don't match";
-      }
-
-      if (!formData.agreeToTerms) {
-        newErrors.agreeToTerms = "Please agree to the terms and conditions";
-      }
+    if (userType === "alumni") {
+      requiredFields.push("firstName", "lastName", "graduationYear", "phone");
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+    if (userType === "institution") {
+      requiredFields.push(
+        "institutionName",
+        "displayName",
+        "registrationNumber",
+        "phone",
+        "street",
+        "city",
+        "contactPersonName",
+        "contactPhone",
+        "logo"
+      );
     }
 
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
+    // Validate required fields
+    requiredFields.forEach((field) => {
+      if (!formData[field] || formData[field].toString().trim() === "") {
+        const label = field
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (str) => str.toUpperCase());
+        newErrors[field] = `${label} is required`;
+      }
+    });
+
+    // Password length
+    if (formData.password && formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
+    }
+
+    // Password match
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords don't match";
+    }
+
+    // Terms checkbox
+    if (isSignUp && !formData.agreeToTerms) {
+      newErrors.agreeToTerms = "Please agree to the terms and conditions";
+    }
+
+    // Logo validation (only for institution)
+    if (userType === "institution" && formData.logo) {
+      if (!["image/jpeg", "image/png"].includes(formData.logo.type)) {
+        newErrors.logo = "Logo must be a JPEG or PNG image";
+      }
+      if (formData.logo.size > 5 * 1024 * 1024) {
+        newErrors.logo = "Logo must be less than 5MB";
+      }
+    }
+
+    // Email format
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email";
     }
 
     setErrors(newErrors);
@@ -157,64 +176,57 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const payload = isSignUp
-        ? {
-            email: formData.email,
-            password: formData.password,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            graduationYear: formData.graduationYear,
-            institutionName: formData.institutionName,
-            location: formData.location,
-            userType, // only needed during signup
-          }
-        : {
-            email: formData.email,
-            password: formData.password, // login only needs these
-          };
+      const formDataToSend = new FormData();
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      if (userType === "alumni") {
+        formDataToSend.append("firstName", formData.firstName);
+        formDataToSend.append("lastName", formData.lastName);
+        formDataToSend.append("graduationYear", formData.graduationYear);
+      }
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("institutionName", formData.institutionName);
+      formDataToSend.append("userType", userType);
+      if (userType === "institution") {
+        formDataToSend.append("displayName", formData.displayName);
+        formDataToSend.append(
+          "registrationNumber",
+          formData.registrationNumber
+        );
+        formDataToSend.append("street", formData.street);
+        formDataToSend.append("city", formData.city);
+        formDataToSend.append("state", formData.state);
+        formDataToSend.append("pincode", formData.pincode);
+        formDataToSend.append("country", formData.country);
+        formDataToSend.append("contactPersonName", formData.contactPersonName);
+        formDataToSend.append("contactEmail", formData.contactEmail);
+        formDataToSend.append("contactPhone", formData.contactPhone);
+        formDataToSend.append("website", formData.website);
+        formDataToSend.append("description", formData.description);
+        if (formData.logo) {
+          formDataToSend.append("logo", formData.logo);
+        }
+      }
 
       const endpoint = isSignUp ? "/api/auth/signup" : "/api/auth/login";
 
       const response = await axios.post(
         `http://localhost:4000${endpoint}`,
-        payload
+        isSignUp
+          ? formDataToSend
+          : {
+              email: formData.email,
+              password: formData.password,
+            },
+        isSignUp ? { headers: { "Content-Type": "multipart/form-data" } } : {}
       );
 
       const { token, user } = response.data;
 
-      // Store JWT in localStorage
       localStorage.setItem("jwtToken", token);
-
-      // ADD THIS: Create school record if user is institution
-      if (isSignUp && userType === "institution") {
-        const schoolPayload = {
-          name: formData.institutionName,
-          display_name: formData.displayName || formData.institutionName,
-          registration_number: formData.registrationNumber,
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          country: formData.country,
-          contact_person_name:
-            formData.contactPersonName ||
-            `${formData.firstName} ${formData.lastName}`,
-          contact_email: formData.contactEmail || formData.email,
-          contact_phone: formData.contactPhone || formData.phone,
-          website: formData.website,
-          description: formData.description,
-        };
-
-        await axios.post("http://localhost:4000/api/schools", schoolPayload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
 
       setIsLoading(false);
 
-      // Redirect based on user type
       if (user.user_type === "institution") {
         navigate("/institute/home");
       } else {
@@ -223,18 +235,15 @@ const Auth = () => {
     } catch (error) {
       setIsLoading(false);
 
-      // Map server response to user-friendly messages
-      if (error.response?.data?.message) {
-        const serverMsg = error.response.data.message.toLowerCase();
+      if (error.response?.data?.error) {
+        const serverMsg = error.response.data.error.toLowerCase();
 
-        if (serverMsg.includes("user not found")) {
-          setMessage("No account found with this email. Please sign up first.");
-        } else if (serverMsg.includes("incorrect password")) {
-          setMessage("Oops! The password you entered is incorrect.");
-        } else if (serverMsg.includes("email already exists")) {
+        if (serverMsg.includes("invalid credentials")) {
+          setMessage("No account found with this email or incorrect password.");
+        } else if (serverMsg.includes("email already in use")) {
           setMessage("This email is already registered. Try signing in.");
         } else {
-          setMessage("Something went wrong. Please try again.");
+          setMessage(error.response.data.error);
         }
       } else {
         setMessage("Something went wrong. Please try again.");
@@ -244,7 +253,6 @@ const Auth = () => {
 
   const toggleAuthMode = () => {
     if (!isSignUp) {
-      // going from login → signup
       setUserType("alumni");
     }
     setIsSignUp(!isSignUp);
@@ -269,15 +277,14 @@ const Auth = () => {
       website: "",
       description: "",
       graduationYear: "",
-      location: "",
       agreeToTerms: false,
+      logo: null,
     });
     setErrors({});
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-hidden flex items-center justify-center relative">
-      {/* Background elements */}
+    <div className="min-h-screen bg-gray-50 overflow-hidden flex items-start justify-center relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
@@ -306,7 +313,6 @@ const Auth = () => {
         ></div>
       </div>
 
-      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-6">
           <div className="flex justify-between items-center h-18">
@@ -336,9 +342,8 @@ const Auth = () => {
         </div>
       </nav>
 
-      <div className="w-full max-w-6xl mx-auto px-6 pt-24 pb-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left content */}
+      <div className="w-full max-w-6xl mx-auto px-0 pt-24 pb-12 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-8 hover:scale-105 transition-transform duration-300">
               <Shield className="h-5 w-5 text-gray-700 animate-pulse" />
@@ -384,7 +389,6 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Right form */}
           <div className="relative">
             <div className="absolute inset-0 bg-gray-300/20 rounded-3xl blur-xl opacity-30"></div>
             <div className="relative bg-white backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 p-8 lg:p-10">
@@ -438,11 +442,11 @@ const Auth = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {isSignUp && (
+                {isSignUp && userType === "alumni" && (
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        First Name
+                        First Name *
                       </label>
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
@@ -467,7 +471,7 @@ const Auth = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Last Name
+                        Last Name *
                       </label>
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
@@ -493,72 +497,118 @@ const Auth = () => {
                   </div>
                 )}
 
-                {isSignUp && userType === "institution" && (
+                {isSignUp && (
                   <>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Institution Legal Name *
-                      </label>
-                      <div className="relative">
-                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="institutionName"
-                          value={formData.institutionName}
-                          onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.institutionName
-                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                              : "border-gray-300"
-                          }`}
-                          placeholder="Enter legal institution name"
-                        />
-                      </div>
-                      {errors.institutionName && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.institutionName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
+                    {userType === "institution" && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Display Name
+                          Institution Legal Name *
                         </label>
                         <div className="relative">
                           <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                           <input
                             type="text"
-                            name="displayName"
-                            value={formData.displayName}
+                            name="institutionName"
+                            value={formData.institutionName}
                             onChange={handleInputChange}
-                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                            placeholder="Public display name"
+                            className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                              errors.institutionName
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Enter legal institution name"
                           />
                         </div>
+                        {errors.institutionName && (
+                          <p className="text-rose-500 text-sm mt-1">
+                            {errors.institutionName}
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Registration Number
-                        </label>
-                        <div className="relative">
-                          <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                          <input
-                            type="text"
-                            name="registrationNumber"
-                            value={formData.registrationNumber}
-                            onChange={handleInputChange}
-                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                            placeholder="Registration number"
-                          />
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {userType === "institution" && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Display Name *
+                          </label>
+                          <div className="relative">
+                            <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                            <input
+                              type="text"
+                              name="displayName"
+                              value={formData.displayName}
+                              onChange={handleInputChange}
+                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                                errors.displayName
+                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                  : "border-gray-300"
+                              }`}
+                              placeholder="Public display name"
+                            />
+                          </div>
+                          {errors.displayName && (
+                            <p className="text-rose-500 text-sm mt-1">
+                              {errors.displayName}
+                            </p>
+                          )}
                         </div>
-                      </div>
+                      )}
+                      {userType === "institution" && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Registration Number *
+                          </label>
+                          <div className="relative">
+                            <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                            <input
+                              type="text"
+                              name="registrationNumber"
+                              value={formData.registrationNumber}
+                              onChange={handleInputChange}
+                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                                errors.displayName
+                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                  : "border-gray-300"
+                              }`}
+                              placeholder="Registration number"
+                            />
+                          </div>
+                          {errors.displayName && (
+                            <p className="text-rose-500 text-sm mt-1">
+                              {errors.displayName}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Street Address
+                        Phone Number *
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      {errors.displayName && (
+                        <p className="text-rose-500 text-sm mt-1">
+                          {errors.displayName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Street Address *
                       </label>
                       <div className="relative">
                         <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
@@ -571,6 +621,11 @@ const Auth = () => {
                           placeholder="Street address"
                         />
                       </div>
+                      {errors.displayName && (
+                        <p className="text-rose-500 text-sm mt-1">
+                          {errors.displayName}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid md:grid-cols-4 gap-4">
@@ -638,40 +693,87 @@ const Auth = () => {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Contact Person Name
-                        </label>
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                          <input
-                            type="text"
-                            name="contactPersonName"
-                            value={formData.contactPersonName}
-                            onChange={handleInputChange}
-                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                            placeholder="Contact person name"
-                          />
+                    {userType === "institution" && (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Contact Person Name *
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                            <input
+                              type="text"
+                              name="contactPersonName"
+                              value={formData.contactPersonName}
+                              onChange={handleInputChange}
+                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                                errors.displayName
+                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                  : "border-gray-300"
+                              }`}
+                              placeholder="Contact person name"
+                            />
+                          </div>
+                          {errors.displayName && (
+                            <p className="text-rose-500 text-sm mt-1">
+                              {errors.displayName}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Contact Phone *
+                          </label>
+                          <div className="relative">
+                            <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                            <input
+                              type="tel"
+                              name="contactPhone"
+                              value={formData.contactPhone}
+                              onChange={handleInputChange}
+                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                                errors.displayName
+                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                  : "border-gray-300"
+                              }`}
+                              placeholder="Contact phone number"
+                            />
+                          </div>
+                          {errors.displayName && (
+                            <p className="text-rose-500 text-sm mt-1">
+                              {errors.displayName}
+                            </p>
+                          )}
                         </div>
                       </div>
+                    )}
+
+                    {userType === "institution" && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Contact Phone
+                          Institution Logo *
                         </label>
                         <div className="relative">
-                          <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                           <input
-                            type="tel"
-                            name="contactPhone"
-                            value={formData.contactPhone}
+                            type="file"
+                            name="logo"
+                            accept="image/jpeg,image/png"
                             onChange={handleInputChange}
-                            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                            placeholder="Contact phone number"
+                            className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                              errors.logo
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
                           />
                         </div>
+                        {errors.logo && (
+                          <p className="text-rose-500 text-sm mt-1">
+                            {errors.logo}
+                          </p>
+                        )}
                       </div>
-                    </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -692,7 +794,7 @@ const Auth = () => {
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Institution Description
+                        Description
                       </label>
                       <div className="relative">
                         <FileText className="absolute left-4 top-4 text-gray-500 h-5 w-5" />
@@ -702,43 +804,15 @@ const Auth = () => {
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                          placeholder="Brief description of your institution"
+                          placeholder="Brief description of your institution or yourself"
                         />
                       </div>
                     </div>
-                  </>
-                )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                        errors.email
-                          ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                          : "border-gray-300"
-                      }`}
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="text-rose-500 text-sm mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                {isSignUp && (
-                  <div className="grid md:grid-cols-2 gap-4">
                     {userType === "alumni" && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Graduation Year
+                          Graduation Year *
                         </label>
                         <div className="relative">
                           <GraduationCap className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
@@ -769,41 +843,36 @@ const Auth = () => {
                         )}
                       </div>
                     )}
-                    <div
-                      className={
-                        userType === "institution" ? "md:col-span-2" : ""
-                      }
-                    >
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Location
-                      </label>
-                      <div className="relative">
-                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.location
-                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                              : "border-gray-300"
-                          }`}
-                          placeholder="City, Country"
-                        />
-                      </div>
-                      {errors.location && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.location}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                        errors.email
+                          ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                          : "border-gray-300"
+                      }`}
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-rose-500 text-sm mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Password *
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
@@ -841,7 +910,7 @@ const Auth = () => {
                 {isSignUp && (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Confirm Password
+                      Confirm Password *
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />

@@ -51,6 +51,9 @@ const AlumniHomePage = () => {
     avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [featuredInstitutions, setFeaturedInstitutions] = useState([]);
+  const [institutionsLoading, setInstitutionsLoading] = useState(true);
+  const [institutionsError, setInstitutionsError] = useState(null);
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -84,6 +87,7 @@ const AlumniHomePage = () => {
 
   useEffect(() => {
     fetchUserData();
+    fetchFeaturedInstitutions();
   }, []);
 
   const fetchUserData = async () => {
@@ -114,93 +118,149 @@ const AlumniHomePage = () => {
     }
   };
 
-  const featuredInstitutions = [
-    {
-      id: 1,
-      name: "Stanford Elementary School",
-      location: "California, USA",
-      image:
-        "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
-      needs: 3,
-      alumni: 450,
-      totalNeeded: 15000,
-      raised: 8500,
-      urgentNeed: "New Library Books",
-      urgentAmount: 3500,
-      category: "elementary",
-      recentUpdate: "2 days ago",
-      description:
-        "Supporting young minds with quality education and resources for the future leaders of tomorrow.",
-    },
-    {
-      id: 2,
-      name: "Cambridge International School",
-      location: "London, UK",
-      image:
-        "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
-      needs: 5,
-      alumni: 1200,
-      totalNeeded: 25000,
-      raised: 18700,
-      urgentNeed: "Science Lab Equipment",
-      urgentAmount: 6300,
-      category: "high-school",
-      recentUpdate: "1 day ago",
-      description:
-        "Fostering global citizens with comprehensive education and modern learning facilities.",
-    },
-    {
-      id: 3,
-      name: "Delhi Public School",
-      location: "New Delhi, India",
-      image:
-        "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
-      needs: 2,
-      alumni: 320,
-      totalNeeded: 12000,
-      raised: 9200,
-      urgentNeed: "Computer Lab Upgrade",
-      urgentAmount: 2800,
-      category: "high-school",
-      recentUpdate: "3 days ago",
-      description:
-        "Empowering students with technology and knowledge to excel in the digital age.",
-    },
-    {
-      id: 4,
-      name: "Melbourne Grammar School",
-      location: "Melbourne, Australia",
-      image:
-        "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
-      needs: 4,
-      alumni: 580,
-      totalNeeded: 30000,
-      raised: 12400,
-      urgentNeed: "Sports Equipment",
-      urgentAmount: 4500,
-      category: "university",
-      recentUpdate: "5 hours ago",
-      description:
-        "Building character and academic excellence through holistic education and community support.",
-    },
-    {
-      id: 5,
-      name: "International School Brussels",
-      location: "Brussels, Belgium",
-      image:
-        "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
-      needs: 3,
-      alumni: 320,
-      totalNeeded: 18000,
-      raised: 11200,
-      urgentNeed: "Art Supplies",
-      urgentAmount: 2200,
-      category: "high-school",
-      recentUpdate: "1 week ago",
-      description:
-        "Nurturing creativity and international mindedness in our diverse student community.",
-    },
-  ];
+  const fetchFeaturedInstitutions = async () => {
+    try {
+      setInstitutionsLoading(true);
+      setInstitutionsError(null);
+
+      const token = localStorage.getItem("jwtToken");
+
+      // Fetch both schools and campaigns in parallel
+      const [schoolsResponse, campaignsResponse] = await Promise.all([
+        axios.get("http://localhost:4000/api/schools", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get("http://localhost:4000/api/campaigns", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const schools = schoolsResponse.data.schools;
+      const campaigns = campaignsResponse.data.campaigns;
+
+      // Group campaigns by school_id
+      const campaignsBySchool = {};
+      campaigns.forEach((campaign) => {
+        if (!campaignsBySchool[campaign.school_id]) {
+          campaignsBySchool[campaign.school_id] = [];
+        }
+        campaignsBySchool[campaign.school_id].push(campaign);
+      });
+
+      // Transform schools data with real campaign information
+      const transformedInstitutions = schools.map((school, index) => {
+        const schoolCampaigns = campaignsBySchool[school.id] || [];
+        const activeCampaigns = schoolCampaigns.filter(
+          (camp) => camp.status === "active"
+        );
+
+        // Calculate total funding needs and progress
+        const totalNeeded = activeCampaigns.reduce(
+          (sum, camp) => sum + (camp.target_amount || 0),
+          0
+        );
+        const totalRaised = activeCampaigns.reduce(
+          (sum, camp) => sum + (camp.current_amount || 0),
+          0
+        );
+
+        // Get the most urgent campaign (highest remaining amount)
+        const urgentCampaign = activeCampaigns.sort(
+          (a, b) =>
+            b.target_amount -
+            b.current_amount -
+            (a.target_amount - a.current_amount)
+        )[0];
+
+        return {
+          id: school.id,
+          name: school.name,
+          location:
+            `${school.city || ""}${school.city && school.state ? ", " : ""}${
+              school.state || ""
+            }`.trim() || "Location not specified",
+          image: school.logo_url || getDefaultImage(index),
+          needs: activeCampaigns.length,
+          alumni:
+            school.metadata?.alumni_count ||
+            Math.floor(Math.random() * 1000) + 100,
+          totalNeeded: totalNeeded || Math.floor(Math.random() * 20000) + 10000,
+          raised: totalRaised || Math.floor(Math.random() * 15000) + 5000,
+          urgentNeed: urgentCampaign?.title || getDefaultUrgentNeed(index),
+          urgentAmount: urgentCampaign
+            ? urgentCampaign.target_amount - urgentCampaign.current_amount
+            : Math.floor(Math.random() * 5000) + 2000,
+          category: school.metadata?.category || getDefaultCategory(index),
+          recentUpdate: getRecentUpdate(activeCampaigns, school.created_at),
+          description:
+            school.description ||
+            school.short_description ||
+            "Supporting education and development for future generations.",
+          campaigns: activeCampaigns,
+          schoolData: school,
+        };
+      });
+
+      setFeaturedInstitutions(transformedInstitutions);
+      setInstitutionsLoading(false);
+    } catch (error) {
+      console.error("Error fetching featured institutions:", error);
+      setInstitutionsError(
+        "Failed to load institutions. Please try again later."
+      );
+      setInstitutionsLoading(false);
+    }
+  };
+
+  // Helper functions for fallback data
+  const getDefaultImage = (index) => {
+    const images = [
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
+      "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=250&fit=crop",
+      "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=250&fit=crop",
+    ];
+    return images[index % images.length];
+  };
+
+  const getDefaultUrgentNeed = (index) => {
+    const needs = [
+      "New Library Books",
+      "Science Lab Equipment",
+      "Computer Lab Upgrade",
+      "Sports Equipment",
+      "Art Supplies",
+      "Scholarship Funds",
+    ];
+    return needs[index % needs.length];
+  };
+
+  const getDefaultCategory = (index) => {
+    const categories = ["elementary", "high-school", "university"];
+    return categories[index % categories.length];
+  };
+
+  const getRecentUpdate = (campaigns, schoolCreatedAt) => {
+    if (campaigns.length > 0) {
+      // Find the most recently created campaign
+      const latestCampaign = campaigns.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      )[0];
+
+      const daysAgo = Math.floor(
+        (new Date() - new Date(latestCampaign.created_at)) /
+          (1000 * 60 * 60 * 24)
+      );
+      if (daysAgo === 0) return "Today";
+      if (daysAgo === 1) return "1 day ago";
+      return `${daysAgo} days ago`;
+    }
+
+    // Fallback to school creation date
+    const daysAgo = Math.floor(
+      (new Date() - new Date(schoolCreatedAt)) / (1000 * 60 * 60 * 24)
+    );
+    return `${daysAgo} days ago`;
+  };
 
   const recentActivities = [
     {
@@ -258,11 +318,23 @@ const AlumniHomePage = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     console.log("Searching for:", searchQuery);
+    // You can implement search functionality here by calling fetchFeaturedInstitutions with search query
   };
 
   const handleLogout = () => {
     localStorage.removeItem("jwtToken");
     navigate("/");
+  };
+
+  const handleDonate = (institutionId, campaignId = null) => {
+    // Navigate to donation page or open donation modal
+    console.log("Donate to:", institutionId, "Campaign:", campaignId);
+    // You can implement donation flow here
+  };
+
+  const handleViewSchool = (institutionId) => {
+    // Navigate to school detail page
+    navigate(`/school/${institutionId}`);
   };
 
   const parallaxOffset = (strength = 0.5) => ({
@@ -277,7 +349,8 @@ const AlumniHomePage = () => {
     const matchesSearch =
       searchQuery === "" ||
       institution.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      institution.location.toLowerCase().includes(searchQuery.toLowerCase());
+      institution.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      institution.urgentNeed.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -396,8 +469,7 @@ const AlumniHomePage = () => {
                 <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
                   <Star className="h-5 w-5 text-gray-700 animate-pulse" />
                   <span className="text-sm font-semibold text-gray-800">
-                    Welcome back, {currentUser.name.split(" ")[0]}!{" "}
-                    {/* Fixed this line */}
+                    Welcome back, {currentUser.name.split(" ")[0]}!
                   </span>
                 </div>
 
@@ -575,115 +647,156 @@ const AlumniHomePage = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sortedInstitutions.map((institution, index) => (
-              <div
-                key={institution.id}
-                className={`group bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300 transform hover:scale-105 ${
-                  isVisible.institutions
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-20 opacity-0"
-                }`}
-                style={{ transitionDelay: `${index * 150}ms` }}
-              >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={institution.image}
-                    alt={institution.name}
-                    className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
-
-                  <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
-                    <span className="text-xs font-bold text-gray-800">
-                      Updated {institution.recentUpdate}
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 border border-white/20 shadow-sm">
-                      <div className="text-xs text-gray-600 mb-1">
-                        Urgent Need
-                      </div>
-                      <div className="text-sm font-bold text-gray-800">
-                        {institution.urgentNeed}
-                      </div>
-                      <div className="text-xs text-gray-700 font-semibold">
-                        ${institution.urgentAmount.toLocaleString()} needed
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300">
-                    {institution.name}
-                  </h3>
-
-                  <div className="flex items-center text-gray-600 mb-3">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                    <span className="text-sm font-medium">
-                      {institution.location}
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                    {institution.description}
-                  </p>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>Progress</span>
-                      <span>
-                        ${institution.raised.toLocaleString()} of $
-                        {institution.totalNeeded.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-gray-800 h-2 rounded-full transition-all duration-700"
-                        style={{
-                          width: `${
-                            (institution.raised / institution.totalNeeded) * 100
-                          }%`,
-                        }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {Math.round(
-                        (institution.raised / institution.totalNeeded) * 100
-                      )}
-                      % funded
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center text-gray-600">
-                      <Users className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm font-medium">
-                        {institution.alumni} alumni
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {institution.needs} active needs
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-2">
-                      <Heart className="h-4 w-4" />
-                      <span>Donate</span>
-                    </button>
-                    <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </button>
-                  </div>
-                </div>
+          {institutionsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading institutions...</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : institutionsError ? (
+            <div className="text-center py-12">
+              <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md mx-auto">
+                <p className="text-red-600 mb-4">{institutionsError}</p>
+                <button
+                  onClick={fetchFeaturedInstitutions}
+                  className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : sortedInstitutions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto border border-gray-200">
+                <p className="text-gray-600 mb-4">
+                  No institutions found matching your criteria.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                  }}
+                  className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {sortedInstitutions.map((institution, index) => (
+                <div
+                  key={institution.id}
+                  className={`group bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300 transform hover:scale-105 ${
+                    isVisible.institutions
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-20 opacity-0"
+                  }`}
+                  style={{ transitionDelay: `${index * 150}ms` }}
+                >
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={institution.image}
+                      alt={institution.name}
+                      className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
+
+                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
+                      <span className="text-xs font-bold text-gray-800">
+                        Updated {institution.recentUpdate}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300">
+                      {institution.name}
+                    </h3>
+
+                    <div className="flex items-center text-gray-600 mb-3">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm font-medium">
+                        {institution.location}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                      {institution.description}
+                    </p>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Progress</span>
+                        <span>
+                          ${institution.raised.toLocaleString()} of $
+                          {institution.totalNeeded.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gray-800 h-2 rounded-full transition-all duration-700"
+                          style={{
+                            width: `${
+                              institution.totalNeeded > 0
+                                ? (institution.raised /
+                                    institution.totalNeeded) *
+                                  100
+                                : 0
+                            }%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {institution.totalNeeded > 0
+                          ? Math.round(
+                              (institution.raised / institution.totalNeeded) *
+                                100
+                            )
+                          : 0}
+                        % funded
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center text-gray-600">
+                        <Users className="h-4 w-4 mr-2 text-gray-500" />
+                        <span className="text-sm font-medium">
+                          {institution.alumni} alumni
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {institution.needs} active needs
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleDonate(institution.id)}
+                        className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-2"
+                      >
+                        <Heart className="h-4 w-4" />
+                        <span>Donate</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/alumni/institute-details/${institution.id}`
+                          )
+                        }
+                        className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {sortedInstitutions.length > 6 && (
             <div className="text-center mt-12">

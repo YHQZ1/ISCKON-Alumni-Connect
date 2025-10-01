@@ -6,6 +6,7 @@ import AlumniHomePage from "./Alumni/AlumniHomePage";
 import InstituteHomePage from "./Institute/InstituteHomePage";
 import AlumniProfile from "./Alumni/AlumniProfile";
 import InstituteProfile from "./Institute/InstituteProfile";
+import InstituteDetails from "./Alumni/InstituteDetails";
 
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
@@ -36,6 +37,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["alumni"]}>
                 <AlumniProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/alumni/institute-details/:id"
+            element={
+              <ProtectedRoute allowedRoles={["alumni"]}>
+                <InstituteDetails />
               </ProtectedRoute>
             }
           />

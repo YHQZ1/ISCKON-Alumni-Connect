@@ -128,7 +128,7 @@ const InstituteProfile = () => {
       {/* Back Button */}
       <div className="max-w-5xl mx-auto mb-6">
         <button
-          onClick={() => navigate("/institutions/home")}
+          onClick={() => navigate("/institute/home")}
           className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-300 font-medium group cursor-pointer"
         >
           <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform duration-300" />

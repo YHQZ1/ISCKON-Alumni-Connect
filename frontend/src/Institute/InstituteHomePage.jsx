@@ -83,11 +83,29 @@ const InstituteHomePage = () => {
     fetchInstituteData();
   }, []);
 
+  useEffect(() => {
+    const fetchRecentDonations = async () => {
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await axios.get(
+          `http://localhost:4000/api/donations?school_id=${currentInstitution?.schoolId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRecentDonations(response.data.donations || []);
+      } catch (err) {
+        console.error("Failed to fetch recent donations", err);
+      }
+    };
+
+    if (currentInstitution?.schoolId) {
+      fetchRecentDonations();
+    }
+  }, [currentInstitution?.schoolId]);
+
   const fetchInstituteData = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
-      console.log("Token:", token);
 
       // Fetch user data to get institution info
       const userResponse = await axios.get(
@@ -96,7 +114,6 @@ const InstituteHomePage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log("User API response:", userResponse.data);
 
       const userData = userResponse.data.user;
 
@@ -107,7 +124,6 @@ const InstituteHomePage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log("Schools API response:", schoolsResponse.data);
 
       const userSchools = schoolsResponse.data.schools;
 
@@ -129,7 +145,6 @@ const InstituteHomePage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log("Campaigns API response:", campaignsResponse.data);
 
       // Transform backend campaigns to match your frontend structure
       const backendFundingNeeds = campaignsResponse.data.campaigns.map(
@@ -234,7 +249,6 @@ const InstituteHomePage = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
   };
 
   const parallaxOffset = (strength = 0.5) => ({
@@ -247,6 +261,16 @@ const InstituteHomePage = () => {
     localStorage.removeItem("jwtToken");
     navigate("/");
   };
+
+  const averageCompletion =
+    Array.isArray(fundingNeeds) && fundingNeeds.length
+      ? Math.round(
+          fundingNeeds.reduce(
+            (sum, need) => sum + (need.raisedAmount / need.goalAmount) * 100,
+            0
+          ) / fundingNeeds.length
+        )
+      : 0;
 
   const handleAddNeedSubmit = async (e) => {
     e.preventDefault();
@@ -282,8 +306,6 @@ const InstituteHomePage = () => {
         }
       );
 
-      console.log("Campaign created successfully:", response.data);
-
       // Refresh the funding needs list from backend
       const campaignsResponse = await axios.get(
         `http://localhost:4000/api/campaigns?school_id=${currentInstitution.schoolId}`,
@@ -312,17 +334,6 @@ const InstituteHomePage = () => {
             "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop",
         })
       );
-
-      const averageCompletion = fundingNeeds.length
-        ? Math.round(
-            fundingNeeds.reduce(
-              (sum, need) => sum + (need.raisedAmount / need.goalAmount) * 100,
-              0
-            ) / fundingNeeds.length
-          )
-        : 0;
-
-      setFundingNeeds(updatedFundingNeeds);
 
       // Update institution stats
       setCurrentInstitution((prev) => ({

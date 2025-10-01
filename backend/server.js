@@ -4,6 +4,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import fileUpload from "express-fileupload";
 
 import authRoutes from "./src/routes/authRoutes.js"    // signup/login (public)
 import userRoutes from "./src/routes/userRoutes.js";     // protected user actions
@@ -12,13 +13,13 @@ import schoolRoutes from "./src/routes/schoolRoutes.js"; // protected school cre
 import authenticateToken from "./src/middleware/authenticateToken.js";
 import errorHandler from "./src/middleware/errorMiddleware.js";
 
-
 import campaignRoutes from "./src/routes/campaignRoutes.js";
 import donationRoutes from "./src/routes/donationRoutes.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 // Public auth routes
 app.use("/api/auth", authRoutes);
