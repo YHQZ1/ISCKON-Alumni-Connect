@@ -2,15 +2,15 @@ version: '3.9'
 
 services: 
   backend:
-    build: ./backend
+    image: uttkarsh0/alumni-connect-backend:latest
     container_name: alumni-backend
     ports: 
       - "4000:4000"
     env_file:
       - backend/.env
-  
+
   frontend:
-    build: ./frontend
+    image: uttkarsh0/alumni-connect-frontend:latest
     container_name: alumni-frontend
     ports: 
       - "5173:80"
