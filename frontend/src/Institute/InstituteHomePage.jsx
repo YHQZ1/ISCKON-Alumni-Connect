@@ -104,28 +104,34 @@ const InstituteHomePage = () => {
     }
   }, [currentInstitution?.schoolId]);
 
+  // Replace the CATEGORY_IMAGES object with this:
+  // Fix the CATEGORY_IMAGES object - use the same category names as in your dropdown
+const CATEGORY_IMAGES = {
+  "Learning Resources": "/category/learning-resources.png",
+  "STEM": "/category/stem.png",
+  "Technology": "/category/technology.png",
+  "Sports": "/category/sports.png",
+  "Arts": "/category/arts.png",
+  "Facilities": "/category/facilities.png",
+  "General": "/category/general.png",
+};
+
   const fetchInstituteData = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
 
       // Fetch user data to get institution info
-      const userResponse = await axios.get(
-        `${BASE_URL}/api/users/me`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const userData = userResponse.data.user;
 
       // Fetch user's schools
-      const schoolsResponse = await axios.get(
-        `${BASE_URL}/api/schools`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const userSchools = schoolsResponse.data.schools;
 
@@ -149,6 +155,7 @@ const InstituteHomePage = () => {
       );
 
       // Transform backend campaigns to match your frontend structure
+      // In the fetchInstituteData function, update the campaign transformation:
       const backendFundingNeeds = campaignsResponse.data.campaigns.map(
         (campaign) => ({
           id: campaign.id,
@@ -156,7 +163,7 @@ const InstituteHomePage = () => {
           description: campaign.short_description || campaign.body || "",
           goalAmount: campaign.target_amount,
           raisedAmount: campaign.current_amount,
-          donors: 0, // You can get this from donations later
+          donors: 0,
           status: campaign.status,
           category: campaign.metadata?.category || "General",
           dateCreated: campaign.created_at
@@ -165,7 +172,8 @@ const InstituteHomePage = () => {
           urgency: campaign.metadata?.urgency || "medium",
           image:
             campaign.metadata?.image ||
-            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop",
+            CATEGORY_IMAGES[campaign.metadata?.category] ||
+            CATEGORY_IMAGES.General, // Use category-based image
         })
       );
 
@@ -222,10 +230,21 @@ const InstituteHomePage = () => {
     }
   };
 
+  const RupeeSign = (props) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      {...props}
+    >
+      <path d="M6 3h12v2H8v2h8c1.1 0 2 .9 2 2s-.9 2-2 2H8v2h6c1.1 0 2 .9 2 2s-.9 2-2 2H6v-2h4v-2H6c-1.1 0-2-.9-2-2s.9-2 2-2h4V7H6V3z" />
+    </svg>
+  );
+
   const quickStats = [
     {
       label: "Total Raised",
-      value: `$${currentInstitution?.totalRaised?.toLocaleString() || "0"}`,
+      value: `₹${currentInstitution?.totalRaised?.toLocaleString() || "0"}`,
       icon: DollarSign,
       color: "text-gray-900",
     },
@@ -287,6 +306,11 @@ const InstituteHomePage = () => {
         );
       }
 
+      // Determine the image to use: user-provided URL or category-based image
+      const finalImage = newNeedData.image.trim()
+        ? newNeedData.image
+        : CATEGORY_IMAGES[newNeedData.category] || CATEGORY_IMAGES.General;
+
       // REAL API CALL - Create campaign in database
       const response = await axios.post(
         `${BASE_URL}/api/campaigns`,
@@ -300,7 +324,7 @@ const InstituteHomePage = () => {
           metadata: {
             category: newNeedData.category,
             urgency: newNeedData.urgency,
-            image: newNeedData.image,
+            image: finalImage, // Use the determined image
           },
         },
         {
@@ -331,9 +355,7 @@ const InstituteHomePage = () => {
             ? campaign.created_at.split("T")[0]
             : new Date().toISOString().split("T")[0],
           urgency: campaign.metadata?.urgency || "medium",
-          image:
-            campaign.metadata?.image ||
-            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop",
+          image: campaign.metadata?.image || CATEGORY_IMAGES.General, // Use category image as fallback
         })
       );
 
@@ -347,6 +369,9 @@ const InstituteHomePage = () => {
           (need) => need.status === "completed"
         ).length,
       }));
+
+      // Set the updated funding needs
+      setFundingNeeds(updatedFundingNeeds);
 
       // Close modal and reset form
       setShowAddNeedModal(false);
@@ -539,7 +564,7 @@ const InstituteHomePage = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-bold text-gray-800">
-                            ${donation.amount}
+                            ₹{donation.amount}
                           </div>
                           <div className="text-xs text-gray-500">
                             {donation.date}
@@ -636,7 +661,7 @@ const InstituteHomePage = () => {
                         className="w-full h-48 object-cover transition-transform duration-700"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
+                      <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
 
                       <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
                         <span
@@ -680,7 +705,7 @@ const InstituteHomePage = () => {
                         <div className="flex justify-between text-sm text-gray-600 mb-2">
                           <span>Progress</span>
                           <span>
-                            ${need.raisedAmount.toLocaleString()} of $
+                            ₹{need.raisedAmount.toLocaleString()} of ₹
                             {need.goalAmount.toLocaleString()}
                           </span>
                         </div>
@@ -854,7 +879,7 @@ const InstituteHomePage = () => {
               <div className="grid md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-gray-100 rounded-2xl p-6 border border-gray-300">
                   <div className="text-3xl font-bold text-gray-800 mb-2">
-                    ${currentInstitution?.totalRaised?.toLocaleString() || "0"}
+                    ₹{currentInstitution?.totalRaised?.toLocaleString() || "0"}
                   </div>
                   <div className="text-sm text-gray-700 font-medium">
                     Total Raised
@@ -937,7 +962,7 @@ const InstituteHomePage = () => {
                           </div>
                         </div>
                         <div className="text-sm font-bold text-gray-800">
-                          ${donation.amount}
+                          ₹{donation.amount}
                         </div>
                       </div>
                     ))}
@@ -1065,7 +1090,7 @@ const InstituteHomePage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Goal Amount ($) *
+                    Goal Amount (₹) *
                   </label>
                   <input
                     type="number"
@@ -1085,7 +1110,10 @@ const InstituteHomePage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image URL (Optional)
+                    Custom Image URL (Optional)
+                    <span className="text-xs text-gray-500 ml-1">
+                      - Leave empty to use category default
+                    </span>
                   </label>
                   <input
                     type="url"
@@ -1094,7 +1122,7 @@ const InstituteHomePage = () => {
                       setNewNeedData({ ...newNeedData, image: e.target.value })
                     }
                     className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
-                    placeholder="https://images.unsplash.com/photo-..."
+                    placeholder="https://example.com/your-image.jpg"
                   />
                 </div>
 

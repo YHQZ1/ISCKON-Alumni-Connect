@@ -10,6 +10,8 @@ import {
   GraduationCap,
   Eye,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +21,7 @@ const Landing = () => {
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const observerRef = useRef();
   const carouselRef = useRef(null);
   const animationRef = useRef(null);
@@ -62,6 +65,11 @@ const Landing = () => {
     }, 5000);
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
+
+  // Close mobile menu when clicking on a link
+  const handleNavClick = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   const featuredInstitutions = [
     {
@@ -210,7 +218,60 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Menu */}
+      <div className={`fixed top-0 right-0 h-full w-80 bg-white z-50 transform transition-transform duration-300 lg:hidden ${
+        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
+                <GraduationCap className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">Alumni Connect</span>
+            </div>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6 text-gray-600" />
+            </button>
+          </div>
+          
+          <nav className="space-y-4">
+            {["How It Works", "Schools", "About"].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase().replace(" ", "-")}`}
+                onClick={handleNavClick}
+                className="block py-3 px-4 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-300 font-medium"
+              >
+                {item}
+              </a>
+            ))}
+            <button
+              onClick={() => {
+                handleNavClick();
+                navigate("/auth");
+              }}
+              className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-all duration-300 font-semibold cursor-pointer mt-4"
+            >
+              Sign In
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Background Elements - Hidden on mobile for performance */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
           style={parallaxOffset(0.3)}
@@ -238,25 +299,28 @@ const Landing = () => {
         ></div>
       </div>
 
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex justify-between items-center h-18">
-            <div className="flex items-center space-x-4 group">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 lg:h-18">
+            <div className="flex items-center space-x-3 lg:space-x-4 group">
               <div className="relative">
-                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md">
-                  <GraduationCap className="h-7 w-7 text-gray-50 transform transition-transform duration-300" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-md">
+                  <GraduationCap className="h-5 w-5 lg:h-7 lg:w-7 text-gray-50 transform transition-transform duration-300" />
                 </div>
               </div>
               <div>
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-xl lg:text-2xl font-bold text-gray-900">
                   Alumni Connect
                 </span>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-xs lg:text-sm text-gray-600 font-medium hidden sm:block">
                   Support & Give Back
                 </div>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-8">
               {["How It Works", "Schools", "About"].map((item, index) => (
                 <a
                   key={item}
@@ -270,32 +334,33 @@ const Landing = () => {
               ))}
               <button
                 onClick={() => navigate("/auth")}
-                className="bg-gray-900 text-gray-50 px-8 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-sm hover:shadow-md font-semibold cursor-pointer"
+                className="bg-gray-900 text-gray-50 px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg lg:rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-sm hover:shadow-md font-semibold cursor-pointer"
               >
                 Sign In
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="h-6 w-6 text-gray-600" />
+            </button>
           </div>
         </div>
       </nav>
 
+      {/* Hero Section */}
       <section
-        className="pt-24 pb-32 relative overflow-hidden"
+        className="pt-20 lg:pt-24 pb-16 lg:pb-32 relative overflow-hidden"
         id="hero"
         data-animate
       >
         <div className="absolute inset-0 bg-gray-100/60"></div>
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-          <div
-            className={`mb-8 transform transition-all duration-1000 ${
-              isVisible.hero
-                ? "translate-y-0 opacity-100"
-                : "translate-y-10 opacity-0"
-            }`}
-            style={{ transitionDelay: "50ms" }}
-          ></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h1
-            className={`text-5xl md:text-6xl font-bold mb-8 leading-tight transform transition-all duration-1000 ${
+            className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 lg:mb-8 leading-tight transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
@@ -318,28 +383,19 @@ const Landing = () => {
             </span>
           </h1>
           <p
-            className={`text-xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed transform transition-all duration-1000 ${
+            className={`text-base sm:text-lg lg:text-xl text-gray-600 mb-8 lg:mb-12 max-w-4xl mx-auto leading-relaxed px-4 transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
             style={{ transitionDelay: "50ms" }}
           >
-            Bridge the gap between alumni and educational institutions
-            worldwide. Support the schools that shaped your journey with
-            complete transparency and meaningful impact. Give back to education
-            that matters.
+            Bridge the gap between alumni and educational institutions worldwide. 
+            Support the schools that shaped your journey with complete transparency.
           </p>
+          
           <div
-            className={`max-w-3xl mx-auto mb-6 transform transition-all duration-1000 ${
-              isVisible.hero
-                ? "translate-y-0 opacity-100"
-                : "translate-y-20 opacity-0"
-            }`}
-            style={{ transitionDelay: "50ms" }}
-          ></div>
-          <div
-            className={`flex flex-col sm:flex-row gap-4 justify-center items-center transform transition-all duration-1000 ${
+            className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center transform transition-all duration-1000 ${
               isVisible.hero
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
@@ -348,14 +404,14 @@ const Landing = () => {
           >
             <button
               onClick={() => navigate("/auth/signup/alumni")}
-              className="group bg-gray-900 text-white px-10 py-4 rounded-xl text-base font-semibold hover:bg-gray-800 flex items-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+              className="w-full sm:w-auto bg-gray-900 text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 rounded-lg lg:rounded-xl text-base font-semibold hover:bg-gray-800 flex items-center justify-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             >
               <GraduationCap className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
               <span>I'm an Alumni</span>
             </button>
             <button
               onClick={() => navigate("/auth/signup/institution")}
-              className="group border border-gray-300 bg-white text-gray-800 px-10 py-4 rounded-xl text-base font-semibold hover:bg-gray-50 hover:border-gray-400 flex items-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+              className="w-full sm:w-auto border border-gray-300 bg-white text-gray-800 px-6 sm:px-8 lg:px-10 py-3 sm:py-4 rounded-lg lg:rounded-xl text-base font-semibold hover:bg-gray-50 hover:border-gray-400 flex items-center justify-center space-x-2 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             >
               <Building className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
               <span>I'm an Institution</span>
@@ -364,13 +420,14 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Stats Section */}
       <section
-        className="py-20 bg-white border-y border-gray-200"
+        className="py-12 lg:py-20 bg-white border-y border-gray-200"
         id="stats"
         data-animate
       >
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {stats.map((stat, index) => {
               const IconComponent = stat.icon;
               return (
@@ -384,14 +441,14 @@ const Landing = () => {
                   style={{ transitionDelay: `${index * 200}ms` }}
                 >
                   <div
-                    className={`w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                    className={`w-12 h-12 lg:w-16 lg:h-16 bg-gray-800 rounded-xl lg:rounded-2xl flex items-center justify-center mx-auto mb-4 lg:mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                   >
-                    <IconComponent className="h-8 w-8 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
+                    <IconComponent className="h-6 w-6 lg:h-8 lg:w-8 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-3 group-hover:scale-105 transition-transform duration-300">
+                  <div className="text-xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3 group-hover:scale-105 transition-transform duration-300">
                     {stat.number}
                   </div>
-                  <div className="text-gray-600 font-medium">{stat.label}</div>
+                  <div className="text-xs lg:text-base text-gray-600 font-medium">{stat.label}</div>
                 </div>
               );
             })}
@@ -399,50 +456,46 @@ const Landing = () => {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-20 bg-gray-100" data-animate>
-        <div className="max-w-7xl mx-auto px-6">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-16 lg:py-20 bg-gray-100" data-animate>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className={`text-center mb-16 transform transition-all duration-1000 ${
+            className={`text-center mb-12 lg:mb-16 transform transition-all duration-1000 ${
               isVisible["how-it-works"]
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
-              <Sparkles className="h-5 w-5 text-gray-700 animate-spin" />
-              <span className="text-sm font-semibold text-gray-800">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 lg:px-6 py-2 lg:py-3 border border-gray-300 shadow-sm mb-4 lg:mb-6">
+              <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700 animate-spin" />
+              <span className="text-xs lg:text-sm font-semibold text-gray-800">
                 Simple & Transparent Process
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8">
               How It <span className="text-gray-800">Works</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Simple, transparent, and impactful - connecting alumni with their
-              schools through complete trust and accountability in educational
-              giving
+            <p className="text-sm lg:text-lg text-gray-600 max-w-3xl mx-auto px-4">
+              Simple, transparent, and impactful - connecting alumni with their schools through complete trust and accountability
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
             {[
               {
                 icon: Search,
                 title: "Find Your School",
-                description:
-                  "Search for your elementary school, high school, college, or university using our comprehensive database of educational institutions worldwide.",
+                description: "Search for your elementary school, high school, college, or university using our comprehensive database of educational institutions worldwide.",
               },
               {
                 icon: Eye,
                 title: "Explore Their Needs",
-                description:
-                  "Discover transparent funding requests with detailed project descriptions, photos, and real-time progress tracking for complete accountability.",
+                description: "Discover transparent funding requests with detailed project descriptions, photos, and real-time progress tracking for complete accountability.",
               },
               {
                 icon: Heart,
                 title: "Contribute & Connect",
-                description:
-                  "Make secure contributions and stay connected with regular updates showing exactly how your support is making a meaningful difference.",
+                description: "Make secure contributions and stay connected with regular updates showing exactly how your support is making a meaningful difference.",
               },
             ].map((step, index) => (
               <div
@@ -454,22 +507,22 @@ const Landing = () => {
                 }`}
                 style={{ transitionDelay: `${(index + 1) * 200}ms` }}
               >
-                <div className="relative mb-8">
+                <div className="relative mb-6 lg:mb-8">
                   <div
-                    className={`w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                    className={`w-16 h-16 lg:w-20 lg:h-20 bg-gray-800 rounded-xl lg:rounded-2xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                   >
-                    <step.icon className="h-10 w-10 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
+                    <step.icon className="h-8 w-8 lg:h-10 lg:w-10 text-gray-50 group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-300 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-sm font-bold text-gray-800">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 lg:w-7 lg:h-7 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-300 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-xs lg:text-sm font-bold text-gray-800">
                       {index + 1}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-gray-800 transition-colors duration-300">
+                <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-3 lg:mb-4 group-hover:text-gray-800 transition-colors duration-300">
                   {step.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-sm lg:text-base text-gray-600 leading-relaxed px-2">
                   {step.description}
                 </p>
               </div>
@@ -478,30 +531,79 @@ const Landing = () => {
         </div>
       </section>
 
-      <section id="schools" className="py-20 bg-white" data-animate>
-        <div className="max-w-7xl mx-auto px-6">
+      {/* Schools Section */}
+      <section id="schools" className="py-16 lg:py-20 bg-white" data-animate>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className={`text-center mb-16 transform transition-all duration-1000 ${
+            className={`text-center mb-12 lg:mb-16 transform transition-all duration-1000 ${
               isVisible.schools
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
-              <Globe className="h-5 w-5 text-gray-700 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 lg:px-6 py-2 lg:py-3 border border-gray-300 shadow-sm mb-4 lg:mb-6">
+              <Globe className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700 animate-pulse" />
+              <span className="text-xs lg:text-sm font-semibold text-gray-800">
                 Global Network
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8">
               Featured <span className="text-gray-800">Schools</span>
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-sm lg:text-lg text-gray-600 px-4">
               Discover educational institutions worldwide seeking alumni support
             </p>
           </div>
 
-          <div className="relative overflow-hidden">
+          {/* Mobile Cards Stack */}
+          <div className="block lg:hidden space-y-6 px-4">
+            {featuredInstitutions.slice(0, 3).map((institution) => (
+              <div
+                key={institution.id}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300"
+              >
+                <div className="relative overflow-hidden">
+                  <img
+                    src={institution.image}
+                    alt={institution.name}
+                    className="w-full h-40 object-cover transition-transform duration-700"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
+                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1 border border-gray-300 shadow-sm">
+                    <span className="text-xs font-bold text-gray-800">
+                      {institution.needs} active needs
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-base font-bold text-gray-900 mb-2">
+                    {institution.name}
+                  </h3>
+                  <div className="flex items-center text-gray-600 mb-3">
+                    <MapPin className="h-3 w-3 mr-1 text-gray-500" />
+                    <span className="text-sm font-medium">
+                      {institution.location}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-gray-600">
+                      <Users className="h-3 w-3 mr-1 text-gray-500" />
+                      <span className="text-sm font-medium">
+                        {institution.alumni} alumni
+                      </span>
+                    </div>
+                    <button className="bg-gray-800 text-white px-4 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold cursor-pointer">
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Carousel */}
+          <div className="hidden lg:block relative overflow-hidden">
             <div ref={carouselRef} className="flex w-max gap-6 px-6">
               {featuredInstitutions.map((institution) => (
                 <div
@@ -553,39 +655,39 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
       <section
-        className="py-20 bg-gray-100"
+        className="py-16 lg:py-20 bg-gray-100"
         id="testimonials"
         data-animate
         onMouseEnter={() => setIsAutoPlaying(false)}
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className={`text-center mb-16 transform transition-all duration-1000 ${
+            className={`text-center mb-12 lg:mb-16 transform transition-all duration-1000 ${
               isVisible.testimonials
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6">
-              <Star className="h-5 w-5 text-gray-700 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 lg:px-6 py-2 lg:py-3 border border-gray-300 shadow-sm mb-4 lg:mb-6">
+              <Star className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700 animate-pulse" />
+              <span className="text-xs lg:text-sm font-semibold text-gray-800">
                 Community Stories
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8">
               Alumni <span className="text-gray-800">Stories</span>
             </h2>
-            <p className="text-lg text-gray-600">
-              Hear inspiring stories from our alumni and educational
-              institutions
+            <p className="text-sm lg:text-lg text-gray-600 px-4">
+              Hear inspiring stories from our alumni and educational institutions
             </p>
           </div>
 
           <div className="max-w-4xl mx-auto">
             <div
-              className={`bg-white rounded-xl shadow-sm p-8 md:p-12 text-center border border-gray-200 relative overflow-hidden transform transition-all duration-1000 ${
+              className={`bg-white rounded-xl shadow-sm p-6 lg:p-8 xl:p-12 text-center border border-gray-200 relative overflow-hidden transform transition-all duration-1000 ${
                 isVisible.testimonials
                   ? "translate-y-0 opacity-100"
                   : "translate-y-20 opacity-0"
@@ -594,11 +696,11 @@ const Landing = () => {
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gray-800"></div>
 
-              <div className="flex justify-center mb-8">
+              <div className="flex justify-center mb-6 lg:mb-8">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-6 w-6 text-gray-500 fill-current mx-1 transform transition-all duration-300 hover:scale-125`}
+                    className={`h-5 w-5 lg:h-6 lg:w-6 text-gray-500 fill-current mx-1 transform transition-all duration-300 hover:scale-125`}
                     style={{
                       animationDelay: `${i * 100}ms`,
                       animation: "twinkle 2s ease-in-out infinite",
@@ -607,7 +709,7 @@ const Landing = () => {
                 ))}
               </div>
 
-              <div className="relative h-56 flex items-center justify-center">
+              <div className="relative h-48 lg:h-56 flex items-center justify-center">
                 {testimonials.map((testimonial, index) => (
                   <div
                     key={index}
@@ -619,14 +721,14 @@ const Landing = () => {
                         : "opacity-0 transform translate-x-full"
                     }`}
                   >
-                    <blockquote className="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed font-medium">
+                    <blockquote className="text-base lg:text-lg xl:text-xl lg:text-2xl text-gray-700 mb-6 lg:mb-8 leading-relaxed font-medium px-2">
                       "{testimonial.text}"
                     </blockquote>
-                    <div className="border-t border-gray-200 pt-6">
-                      <div className="font-bold text-lg text-gray-900 mb-2">
+                    <div className="border-t border-gray-200 pt-4 lg:pt-6">
+                      <div className="font-bold text-base lg:text-lg text-gray-900 mb-1 lg:mb-2">
                         {testimonial.author}
                       </div>
-                      <div className="text-gray-600 font-medium">
+                      <div className="text-sm lg:text-base text-gray-600 font-medium">
                         {testimonial.batch}
                       </div>
                     </div>
@@ -635,12 +737,12 @@ const Landing = () => {
               </div>
             </div>
 
-            <div className="flex justify-center mt-8 space-x-2">
+            <div className="flex justify-center mt-6 lg:mt-8 space-x-2">
               {testimonials.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                  className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full transition-all duration-300 hover:scale-125 ${
                     index === currentTestimonial
                       ? "bg-gray-800 scale-125 shadow-sm"
                       : "bg-gray-300 hover:bg-gray-400"
@@ -652,8 +754,9 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* CTA Section */}
       <section
-        className="py-20 bg-gray-900 relative overflow-hidden"
+        className="py-16 lg:py-20 bg-gray-900 relative overflow-hidden"
         id="cta"
         data-animate
       >
@@ -669,51 +772,62 @@ const Landing = () => {
         </div>
 
         <div
-          className={`max-w-5xl mx-auto px-6 text-center relative z-10 transform transition-all duration-1000 ${
+          className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 transform transition-all duration-1000 ${
             isVisible.cta
               ? "translate-y-0 opacity-100"
               : "translate-y-20 opacity-0"
           }`}
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-50 mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-50 mb-6 lg:mb-8">
             Ready to Make a <span className="text-gray-300">Difference</span>?
           </h2>
-          <p className="text-lg text-gray-300 mb-6 max-w-3xl mx-auto leading-relaxed">
-            Join thousands of alumni supporting education worldwide. Every
-            contribution counts in shaping the future of students and
-            strengthening educational institutions across the globe.
+          <p className="text-sm lg:text-lg text-gray-300 mb-6 max-w-3xl mx-auto leading-relaxed px-4">
+            Join thousands of alumni supporting education worldwide. Every contribution counts in shaping the future of students.
           </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => navigate("/auth/signup/alumni")}
+              className="bg-white text-gray-900 px-6 lg:px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 cursor-pointer"
+            >
+              Join as Alumni
+            </button>
+            <button
+              onClick={() => navigate("/auth/signup/institution")}
+              className="border border-gray-600 text-white px-6 lg:px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all duration-300 cursor-pointer"
+            >
+              Register School
+            </button>
+          </div>
         </div>
       </section>
 
-      <footer className="bg-gray-900 text-gray-50 py-16 relative overflow-hidden">
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-50 py-12 lg:py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid md:grid-cols-4 gap-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
             <div className="group">
-              <div className="flex items-center space-x-3 mb-8">
-                <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                  <GraduationCap className="h-5 w-5 text-gray-900" />
+              <div className="flex items-center space-x-3 mb-6 lg:mb-8">
+                <div className="w-8 h-8 lg:w-9 lg:h-9 bg-gray-50 rounded-lg lg:rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <GraduationCap className="h-4 w-4 lg:h-5 lg:w-5 text-gray-900" />
                 </div>
                 <div>
                   <span className="text-lg font-bold">Alumni Connect</span>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-xs lg:text-sm text-gray-400">
                     Support & Give Back
                   </div>
                 </div>
               </div>
-              <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                Connecting graduates with their educational institutions
-                worldwide, fostering support and creating lasting impact through
-                transparent giving.
+              <p className="text-sm lg:text-base text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                Connecting graduates with their educational institutions worldwide, fostering support and creating lasting impact.
               </p>
             </div>
 
             <div className="group">
-              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-4 lg:mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 For Alumni
               </h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-2 lg:space-y-3 text-gray-400">
                 {[
                   "Find Your School",
                   "Browse Projects",
@@ -723,7 +837,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
+                      className="text-sm lg:text-base hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -734,10 +848,10 @@ const Landing = () => {
             </div>
 
             <div className="group">
-              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-4 lg:mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 For Schools
               </h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-2 lg:space-y-3 text-gray-400">
                 {[
                   "Register School",
                   "Create Projects",
@@ -747,7 +861,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
+                      className="text-sm lg:text-base hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -758,10 +872,10 @@ const Landing = () => {
             </div>
 
             <div className="group">
-              <h3 className="text-base font-semibold mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
+              <h3 className="text-base font-semibold mb-4 lg:mb-6 text-gray-300 group-hover:text-gray-200 transition-colors duration-300">
                 Support
               </h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-2 lg:space-y-3 text-gray-400">
                 {[
                   "Help Center",
                   "Contact Us",
@@ -771,7 +885,7 @@ const Landing = () => {
                   <li key={item}>
                     <a
                       href="#"
-                      className="hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
+                      className="text-sm lg:text-base hover:text-gray-50 transition-all duration-300 hover:translate-x-2 transform inline-block"
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
                       {item}
@@ -782,9 +896,9 @@ const Landing = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 mt-8 lg:mt-12 pt-6 lg:pt-8 text-center text-gray-400">
             <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="mb-4 md:mb-0 hover:text-gray-300 transition-colors duration-300">
+              <p className="text-sm lg:text-base mb-4 md:mb-0 hover:text-gray-300 transition-colors duration-300">
                 &copy; 2025 Alumni Connect. All rights reserved.
               </p>
             </div>

@@ -60,7 +60,7 @@ const Auth = () => {
   const [userType, setUserType] = useState(paramUserType || "alumni");
 
   const [isSignUp, setIsSignUp] = useState(() => {
-    return !!paramUserType; // if there's a param, you're in signup mode
+    return !!paramUserType;
   });
 
   useEffect(() => {
@@ -105,80 +105,87 @@ const Auth = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Always required
-    const requiredFields = ["email", "password"];
-
-    // Only add signup-specific fields if signing up
-    if (isSignUp) {
-      requiredFields.push("confirmPassword");
-
-      if (userType === "alumni") {
-        requiredFields.push(
-          "firstName",
-          "lastName",
-          "graduationYear",
-          "phone",
-          "email" // already included, safe to leave
-        );
-      }
-
-      if (userType === "institution") {
-        requiredFields.push(
-          "institutionName",
-          "displayName",
-          "registrationNumber",
-          "phone",
-          "street",
-          "city",
-          "state", // added
-          "pincode", // added
-          "contactPersonName",
-          "contactEmail", // added
-          "contactPhone",
-          "logo"
-          // "website" optional depending on requirements
-        );
-      }
+    // Basic fields for all signups
+    if (!formData.email || formData.email.trim() === "") {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email";
     }
 
-    // Validate required fields
-    requiredFields.forEach((field) => {
-      if (!formData[field] || formData[field].toString().trim() === "") {
-        const label = field
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase());
-        newErrors[field] = `${label} is required`;
-      }
-    });
-
-    // Password length (signup only)
-    if (isSignUp && formData.password && formData.password.length < 6) {
+    if (!formData.password || formData.password.trim() === "") {
+      newErrors.password = "Password is required";
+    } else if (isSignUp && formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Password match (signup only)
-    if (isSignUp && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords don't match";
-    }
-
-    // Terms checkbox (signup only)
-    if (isSignUp && !formData.agreeToTerms) {
-      newErrors.agreeToTerms = "Please agree to the terms and conditions";
-    }
-
-    // Logo validation (signup only)
-    if (isSignUp && userType === "institution" && formData.logo) {
-      if (!["image/jpeg", "image/png"].includes(formData.logo.type)) {
-        newErrors.logo = "Logo must be a JPEG or PNG image";
+    if (isSignUp) {
+      // Confirm password
+      if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
+        newErrors.confirmPassword = "Please confirm your password";
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords don't match";
       }
-      if (formData.logo.size > 5 * 1024 * 1024) {
-        newErrors.logo = "Logo must be less than 5MB";
-      }
-    }
 
-    // Email format (always)
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+      // Common fields for both user types
+      if (!formData.phone || formData.phone.trim() === "") {
+        newErrors.phone = "Phone number is required";
+      }
+
+      if (userType === "alumni") {
+        // Alumni specific fields - only the requested ones
+        if (!formData.firstName || formData.firstName.trim() === "") {
+          newErrors.firstName = "First name is required";
+        }
+        if (!formData.lastName || formData.lastName.trim() === "") {
+          newErrors.lastName = "Last name is required";
+        }
+        if (!formData.graduationYear) {
+          newErrors.graduationYear = "Graduation year is required";
+        }
+      }
+
+      if (userType === "institution") {
+        // Institution specific fields - ONLY make essential fields required like in working code
+        if (
+          !formData.institutionName ||
+          formData.institutionName.trim() === ""
+        ) {
+          newErrors.institutionName = "Institution name is required";
+        }
+        if (!formData.city || formData.city.trim() === "") {
+          newErrors.city = "City is required";
+        }
+
+        // REMOVED: Logo validation (no longer required)
+        // REMOVED: All other institution field validations that were making them required
+
+        // Only validate logo if provided (optional)
+        if (formData.logo) {
+          if (
+            !["image/jpeg", "image/png", "image/jpg"].includes(
+              formData.logo.type
+            )
+          ) {
+            newErrors.logo = "Logo must be a JPEG or PNG image";
+          }
+          if (formData.logo.size > 5 * 1024 * 1024) {
+            newErrors.logo = "Logo must be less than 5MB";
+          }
+        }
+
+        // Contact email validation only if provided
+        if (
+          formData.contactEmail &&
+          !/\S+@\S+\.\S+/.test(formData.contactEmail)
+        ) {
+          newErrors.contactEmail = "Please enter a valid contact email";
+        }
+      }
+
+      // Terms agreement
+      if (!formData.agreeToTerms) {
+        newErrors.agreeToTerms = "Please agree to the terms and conditions";
+      }
     }
 
     setErrors(newErrors);
@@ -272,11 +279,12 @@ const Auth = () => {
       setUserType("alumni");
     }
     setIsSignUp(!isSignUp);
-    setFormData({
+
+    setFormData((prev) => ({
       firstName: "",
       lastName: "",
-      email: "",
-      password: "",
+      email: prev.email,
+      password: prev.password,
       confirmPassword: "",
       phone: "",
       institutionName: "",
@@ -295,13 +303,14 @@ const Auth = () => {
       graduationYear: "",
       agreeToTerms: false,
       logo: null,
-    });
+    }));
     setErrors({});
   };
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden flex items-center justify-center relative">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* Background elements - hidden on mobile */}
+      <div className="hidden sm:block fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
           style={parallaxOffset(0.3)}
@@ -329,46 +338,49 @@ const Auth = () => {
         ></div>
       </div>
 
+      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex justify-between items-center h-18">
-            <div className="flex items-center space-x-4 group cursor-pointer">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16 sm:h-18">
+            <div className="flex items-center space-x-2 sm:space-x-4 group cursor-pointer">
               <div className="relative">
-                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
-                  <GraduationCap className="h-7 w-7 text-gray-50 transform group-hover:scale-110 transition-transform duration-300" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
+                  <GraduationCap className="h-5 w-5 sm:h-7 sm:w-7 text-gray-50 transform group-hover:scale-110 transition-transform duration-300" />
                 </div>
               </div>
               <div>
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">
                   Alumni Connect
                 </span>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:block">
                   Support & Give Back
                 </div>
               </div>
             </div>
             <button
               onClick={() => window.history.back()}
-              className="flex items-center space-x-2 cursor-pointer text-gray-600 hover:text-gray-800 transition-colors duration-300 font-medium group"
+              className="flex items-center space-x-1 sm:space-x-2 cursor-pointer text-gray-600 hover:text-gray-800 transition-colors duration-300 font-medium group"
             >
-              <X className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
-              <span>Close</span>
+              <X className="h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-90 transition-transform duration-300" />
+              <span className="hidden sm:inline">Close</span>
             </button>
           </div>
         </div>
       </nav>
 
-      <div className="w-full max-w-6xl mx-auto px-6 pt-24 pb-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          <div className="text-center lg:text-left">
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-8 hover:scale-105 transition-transform duration-300">
-              <Shield className="h-5 w-5 text-gray-700 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+      {/* Main content */}
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-8 sm:pb-12 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-start">
+          {/* Left side - Hero section */}
+          <div className="text-center lg:text-left order-2 lg:order-1">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 shadow-sm mb-6 sm:mb-8 hover:scale-105 transition-transform duration-300">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 animate-pulse" />
+              <span className="text-xs sm:text-sm font-semibold text-gray-800">
                 Secure & Trusted Platform
               </span>
             </div>
 
-            <h1 className="text-5xl lg:text-6xl font-bold mb-8 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 sm:mb-8 leading-tight">
               <span className="text-gray-800 block">
                 {isSignUp ? "Join Our" : "Welcome"}
               </span>
@@ -377,41 +389,47 @@ const Auth = () => {
               </span>
             </h1>
 
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6 sm:mb-8 leading-relaxed">
               {isSignUp
                 ? "Connect with thousands of alumni and educational institutions worldwide. Support education with transparency and trust."
                 : "Sign in to reconnect with your alma mater and support the institutions that shaped your educational journey."}
             </p>
 
-            <div className="grid grid-cols-2 gap-6 mt-8">
-              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300">
-                <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                  <GraduationCap className="h-6 w-6 text-gray-50" />
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-8">
+              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 text-center sm:text-left">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800 rounded-xl flex items-center justify-center mx-auto sm:mx-0 mb-3 sm:mb-4 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-gray-50" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">For Alumni</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-2">
+                  For Alumni
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600">
                   Reconnect with your school and make meaningful contributions
                 </p>
               </div>
-              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300">
-                <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                  <Building className="h-6 w-6 text-gray-50" />
+
+              <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 text-center sm:text-left">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800 rounded-xl flex items-center justify-center mx-auto sm:mx-0 mb-3 sm:mb-4 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <Building className="h-5 w-5 sm:h-6 sm:w-6 text-gray-50" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">For Schools</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-2">
+                  For Schools
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600">
                   Connect with alumni and showcase your funding needs
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="relative">
+          {/* Right side - Form section */}
+          <div className="relative order-1 lg:order-2">
             <div className="absolute inset-0 bg-gray-300/20 rounded-3xl blur-xl opacity-30"></div>
-            <div className="relative bg-white backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 p-8 lg:p-10">
+            <div className="relative bg-white backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 p-6 sm:p-8 lg:p-10">
               {isSignUp && (
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-4">
                       I am an:
                     </h3>
                   </div>
@@ -419,36 +437,36 @@ const Auth = () => {
                     <button
                       type="button"
                       onClick={() => setUserType("alumni")}
-                      className={`flex-1 cursor-pointer py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
+                      className={`flex-1 cursor-pointer py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
                         userType === "alumni"
                           ? "bg-gray-800 text-white shadow-md"
                           : "text-gray-600 hover:text-gray-800"
                       }`}
                     >
-                      <GraduationCap className="h-5 w-5" />
-                      <span>Alumni</span>
+                      <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-sm sm:text-base">Alumni</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setUserType("institution")}
-                      className={`flex-1 cursor-pointer py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
+                      className={`flex-1 cursor-pointer py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
                         userType === "institution"
                           ? "bg-gray-800 text-white shadow-md"
                           : "text-gray-600 hover:text-gray-800"
                       }`}
                     >
-                      <Building className="h-5 w-5" />
-                      <span>Institution</span>
+                      <Building className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-sm sm:text-base">Institution</span>
                     </button>
                   </div>
                 </div>
               )}
 
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                   {isSignUp ? "Create Account" : "Sign In"}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm sm:text-base">
                   {isSignUp
                     ? `Join as ${
                         userType === "alumni" ? "an" : "an"
@@ -457,147 +475,60 @@ const Auth = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 {isSignUp && userType === "alumni" && (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        First Name *
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.firstName
-                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                              : "border-gray-300"
-                          }`}
-                          placeholder="Enter your first name"
-                        />
-                      </div>
-                      {errors.firstName && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.firstName}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Last Name *
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.lastName
-                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                              : "border-gray-300"
-                          }`}
-                          placeholder="Enter your last name"
-                        />
-                      </div>
-                      {errors.lastName && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.lastName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {isSignUp && (
                   <>
-                    {userType === "institution" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Institution Legal Name *
+                          First Name *
                         </label>
                         <div className="relative">
-                          <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                           <input
                             type="text"
-                            name="institutionName"
-                            value={formData.institutionName}
+                            name="firstName"
+                            value={formData.firstName}
                             onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                               errors.firstName
                                 ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                                 : "border-gray-300"
                             }`}
-                            placeholder="Enter your first name"
+                            placeholder="First name"
                           />
                         </div>
                         {errors.firstName && (
-                          <p className="text-rose-500 text-sm mt-1">
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
                             {errors.firstName}
                           </p>
                         )}
                       </div>
-                    )}
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {userType === "institution" && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Display Name *
-                          </label>
-                          <div className="relative">
-                            <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                            <input
-                              type="text"
-                              name="displayName"
-                              value={formData.displayName}
-                              onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.firstName
-                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                  : "border-gray-300"
-                              }`}
-                              placeholder="Enter your first name"
-                            />
-                          </div>
-                          {errors.firstName && (
-                            <p className="text-rose-500 text-sm mt-1">
-                              {errors.firstName}
-                            </p>
-                          )}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Last Name *
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                          <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                              errors.lastName
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Last name"
+                          />
                         </div>
-                      )}
-                      {userType === "institution" && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Registration Number *
-                          </label>
-                          <div className="relative">
-                            <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                            <input
-                              type="text"
-                              name="registrationNumber"
-                              value={formData.registrationNumber}
-                              onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.firstName
-                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                  : "border-gray-300"
-                              }`}
-                              placeholder="Enter your first name"
-                            />
-                          </div>
-                          {errors.firstName && (
-                            <p className="text-rose-500 text-sm mt-1">
-                              {errors.firstName}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        {errors.lastName && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.lastName}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div>
@@ -605,23 +536,165 @@ const Auth = () => {
                         Phone Number *
                       </label>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                         <input
                           type="tel"
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.firstName
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.phone
                               ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                               : "border-gray-300"
                           }`}
-                          placeholder="Enter your first name"
+                          placeholder="Phone number"
                         />
                       </div>
-                      {errors.firstName && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.firstName}
+                      {errors.phone && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Graduation Year *
+                      </label>
+                      <div className="relative">
+                        <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        <select
+                          name="graduationYear"
+                          value={formData.graduationYear}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.graduationYear
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          <option value="">Select year</option>
+                          {Array.from({ length: 50 }, (_, i) => 2024 - i).map(
+                            (year) => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+                      {errors.graduationYear && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.graduationYear}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {isSignUp && userType === "institution" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Institution Legal Name *
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        <input
+                          type="text"
+                          name="institutionName"
+                          value={formData.institutionName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.institutionName
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Institution name"
+                        />
+                      </div>
+                      {errors.institutionName && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.institutionName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Display Name *
+                        </label>
+                        <div className="relative">
+                          <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                          <input
+                            type="text"
+                            name="displayName"
+                            value={formData.displayName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                              errors.displayName
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Display name"
+                          />
+                        </div>
+                        {errors.displayName && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.displayName}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Registration Number *
+                        </label>
+                        <div className="relative">
+                          <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                          <input
+                            type="text"
+                            name="registrationNumber"
+                            value={formData.registrationNumber}
+                            onChange={handleInputChange}
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                              errors.registrationNumber
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Registration number"
+                          />
+                        </div>
+                        {errors.registrationNumber && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.registrationNumber}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.phone
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="Phone number"
+                        />
+                      </div>
+                      {errors.phone && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.phone}
                         </p>
                       )}
                     </div>
@@ -631,29 +704,29 @@ const Auth = () => {
                         Street Address *
                       </label>
                       <div className="relative">
-                        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                         <input
                           type="text"
                           name="street"
                           value={formData.street}
                           onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                            errors.firstName
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.street
                               ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                               : "border-gray-300"
                           }`}
-                          placeholder="Enter your first name"
+                          placeholder="Street address"
                         />
                       </div>
-                      {errors.firstName && (
-                        <p className="text-rose-500 text-sm mt-1">
-                          {errors.firstName}
+                      {errors.street && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.street}
                         </p>
                       )}
                     </div>
 
-                    <div className="grid md:grid-cols-4 gap-4">
-                      <div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                      <div className="col-span-2 sm:col-span-1">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           City *
                         </label>
@@ -662,7 +735,7 @@ const Auth = () => {
                           name="city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          className={`w-full px-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                          className={`w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                             errors.city
                               ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                               : "border-gray-300"
@@ -670,148 +743,170 @@ const Auth = () => {
                           placeholder="City"
                         />
                         {errors.city && (
-                          <p className="text-rose-500 text-sm mt-1">
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
                             {errors.city}
                           </p>
                         )}
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          State
+                          State *
                         </label>
                         <input
                           type="text"
                           name="state"
                           value={formData.state}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          className={`w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.state
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
                           placeholder="State"
                         />
+                        {errors.state && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.state}
+                          </p>
+                        )}
                       </div>
-                      <div>
+                      <div className="col-span-1">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Pincode
+                          Pincode *
                         </label>
                         <input
                           type="text"
                           name="pincode"
                           value={formData.pincode}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          className={`w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.pincode
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
                           placeholder="Pincode"
                         />
+                        {errors.pincode && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.pincode}
+                          </p>
+                        )}
                       </div>
-                      <div>
+                      <div className="col-span-1">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Country
+                          Country *
                         </label>
                         <select
                           name="country"
                           value={formData.country}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          className={`w-full px-3 sm:px-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.country
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
                         >
                           <option value="India">India</option>
                           <option value="Other">Other</option>
                         </select>
-                      </div>
-                    </div>
-
-                    {userType === "institution" && (
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Contact Person Name *
-                          </label>
-                          <div className="relative">
-                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                            <input
-                              type="text"
-                              name="contactPersonName"
-                              value={formData.contactPersonName}
-                              onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.firstName
-                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                  : "border-gray-300"
-                              }`}
-                              placeholder="Enter your first name"
-                            />
-                          </div>
-                          {errors.firstName && (
-                            <p className="text-rose-500 text-sm mt-1">
-                              {errors.firstName}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Contact Phone *
-                          </label>
-                          <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                            <input
-                              type="tel"
-                              name="contactPhone"
-                              value={formData.contactPhone}
-                              onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                                errors.firstName
-                                  ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                  : "border-gray-300"
-                              }`}
-                              placeholder="Enter your first name"
-                            />
-                          </div>
-                          {errors.firstName && (
-                            <p className="text-rose-500 text-sm mt-1">
-                              {errors.firstName}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {userType === "institution" && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Institution Logo *
-                        </label>
-                        <div className="relative">
-                          <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                          <input
-                            type="file"
-                            name="logo"
-                            accept="image/jpeg,image/png"
-                            onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                              errors.firstName
-                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                : "border-gray-300"
-                            }`}
-                            placeholder="Enter your first name"
-                          />
-                        </div>
-                        {errors.firstName && (
-                          <p className="text-rose-500 text-sm mt-1">
-                            {errors.firstName}
+                        {errors.country && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.country}
                           </p>
                         )}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Contact Person Name *
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                          <input
+                            type="text"
+                            name="contactPersonName"
+                            value={formData.contactPersonName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                              errors.contactPersonName
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Contact person name"
+                          />
+                        </div>
+                        {errors.contactPersonName && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.contactPersonName}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Contact Phone *
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                          <input
+                            type="tel"
+                            name="contactPhone"
+                            value={formData.contactPhone}
+                            onChange={handleInputChange}
+                            className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                              errors.contactPhone
+                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                                : "border-gray-300"
+                            }`}
+                            placeholder="Contact phone"
+                          />
+                        </div>
+                        {errors.contactPhone && (
+                          <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                            {errors.contactPhone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Institution Logo *
+                      </label>
+                      <div className="relative">
+                        <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        <input
+                          type="file"
+                          name="logo"
+                          accept="image/jpeg,image/png"
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                            errors.logo
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                              : "border-gray-300"
+                          }`}
+                        />
+                      </div>
+                      {errors.logo && (
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                          {errors.logo}
+                        </p>
+                      )}
+                    </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Website
                       </label>
                       <div className="relative">
-                        <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                         <input
                           type="url"
                           name="website"
                           value={formData.website}
                           onChange={handleInputChange}
-                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                          className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base"
                           placeholder="https://example.com"
                         />
                       </div>
@@ -822,52 +917,17 @@ const Auth = () => {
                         Description
                       </label>
                       <div className="relative">
-                        <FileText className="absolute left-4 top-4 text-gray-500 h-5 w-5" />
+                        <FileText className="absolute left-3 top-4 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                         <textarea
                           name="description"
                           value={formData.description}
                           onChange={handleInputChange}
                           rows={3}
-                          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
-                          placeholder="Brief description of your institution or yourself"
+                          className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base"
+                          placeholder="Brief description"
                         />
                       </div>
                     </div>
-
-                    {userType === "alumni" && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Graduation Year *
-                        </label>
-                        <div className="relative">
-                          <GraduationCap className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                          <select
-                            name="graduationYear"
-                            value={formData.graduationYear}
-                            onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
-                              errors.graduationYear
-                                ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            <option value="">Select year</option>
-                            {Array.from({ length: 50 }, (_, i) => 2024 - i).map(
-                              (year) => (
-                                <option key={year} value={year}>
-                                  {year}
-                                </option>
-                              )
-                            )}
-                          </select>
-                        </div>
-                        {errors.graduationYear && (
-                          <p className="text-rose-500 text-sm mt-1">
-                            {errors.graduationYear}
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </>
                 )}
 
@@ -876,22 +936,24 @@ const Auth = () => {
                     Email Address *
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                      className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                         errors.email
                           ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                           : "border-gray-300"
                       }`}
-                      placeholder="Enter your email"
+                      placeholder="Email address"
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-rose-500 text-sm mt-1">{errors.email}</p>
+                    <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                      {errors.email}
+                    </p>
                   )}
                 </div>
 
@@ -900,33 +962,33 @@ const Auth = () => {
                     Password *
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className={`w-full pl-12 pr-12 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                      className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                         errors.password
                           ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                           : "border-gray-300"
                       }`}
-                      placeholder="Enter your password"
+                      placeholder="Password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
                     >
                       {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                       )}
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-rose-500 text-sm mt-1">
+                    <p className="text-rose-500 text-xs sm:text-sm mt-1">
                       {errors.password}
                     </p>
                   )}
@@ -938,35 +1000,35 @@ const Auth = () => {
                       Confirm Password *
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
                       <input
                         type={showConfirmPassword ? "text" : "password"}
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className={`w-full pl-12 pr-12 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                        className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                           errors.confirmPassword
                             ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                             : "border-gray-300"
                         }`}
-                        placeholder="Confirm your password"
+                        placeholder="Confirm password"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-300"
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                         )}
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="text-rose-500 text-sm mt-1">
+                      <p className="text-rose-500 text-xs sm:text-sm mt-1">
                         {errors.confirmPassword}
                       </p>
                     )}
@@ -980,9 +1042,9 @@ const Auth = () => {
                       name="agreeToTerms"
                       checked={formData.agreeToTerms}
                       onChange={handleInputChange}
-                      className="h-5 w-5 text-gray-800 cursor-pointer focus:ring-gray-500/50 border-2 border-gray-300 bg-gray-50 rounded-md"
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-gray-800 cursor-pointer focus:ring-gray-500/50 border-2 border-gray-300 bg-gray-50 rounded-md mt-1 flex-shrink-0"
                     />
-                    <div className="text-sm">
+                    <div className="text-xs sm:text-sm">
                       <span className="text-gray-600">
                         I agree to the{" "}
                         <button
@@ -1000,37 +1062,39 @@ const Auth = () => {
                         </button>
                       </span>
                       {errors.agreeToTerms && (
-                        <p className="text-rose-500 text-sm mt-1">
+                        <p className="text-rose-500 text-xs sm:text-sm mt-1">
                           {errors.agreeToTerms}
                         </p>
                       )}
                     </div>
                   </div>
                 )}
+
                 {message && (
-                  <div className="bg-amber-100 text-amber-700 p-3 rounded-md mb-4 text-center border border-amber-200">
+                  <div className="bg-amber-100 text-amber-700 p-3 rounded-md mb-4 text-center border border-amber-200 text-sm sm:text-base">
                     {message}
                   </div>
                 )}
+
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full group relative bg-gray-800 text-white py-4 rounded-xl font-semibold text-lg hover:bg-gray-700 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-3 overflow-hidden cursor-pointer"
+                  className="w-full group relative bg-gray-800 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-gray-700 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center space-x-2 sm:space-x-3 overflow-hidden cursor-pointer"
                 >
                   <span className="absolute inset-0 bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white relative z-10"></div>
-                      <span className="relative z-10">
+                      <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-white relative z-10"></div>
+                      <span className="relative z-10 text-sm sm:text-base">
                         {isSignUp ? "Creating Account..." : "Signing In..."}
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="relative z-10">
+                      <span className="relative z-10 text-sm sm:text-base">
                         {isSignUp ? "Create Account" : "Sign In"}
                       </span>
-                      <ArrowRight className="h-5 w-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
                     </>
                   )}
                 </button>
@@ -1039,7 +1103,7 @@ const Auth = () => {
                   <div className="text-center">
                     <button
                       type="button"
-                      className="text-gray-800 hover:text-gray-900 font-semibold transition-colors cursor-pointer duration-300"
+                      className="text-gray-800 hover:text-gray-900 font-semibold transition-colors cursor-pointer duration-300 text-sm sm:text-base"
                     >
                       Forgot your password?
                     </button>
@@ -1047,15 +1111,15 @@ const Auth = () => {
                 )}
               </form>
 
-              <div className="mt-8 text-center border-t border-gray-200 pt-6">
-                <span className="text-gray-600">
+              <div className="mt-6 sm:mt-8 text-center border-t border-gray-200 pt-4 sm:pt-6">
+                <span className="text-gray-600 text-sm sm:text-base">
                   {isSignUp
                     ? "Already have an account?"
                     : "Don't have an account?"}
                 </span>
                 <button
                   onClick={toggleAuthMode}
-                  className="ml-2 text-gray-800 hover:text-gray-900 font-semibold transition-colors duration-300 hover:underline cursor-pointer"
+                  className="ml-2 text-gray-800 hover:text-gray-900 font-semibold transition-colors duration-300 hover:underline cursor-pointer text-sm sm:text-base"
                 >
                   {isSignUp ? "Sign In" : "Sign Up"}
                 </button>

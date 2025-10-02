@@ -33,10 +33,10 @@ const AlumniHomePage = () => {
   const [sortBy, setSortBy] = useState("recent");
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
   const observerRef = useRef();
-  const carouselRef = useRef(null);
   const animationRef = useRef(null);
-  const [carouselSpeed] = useState(0.1);
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState({
@@ -85,6 +85,7 @@ const AlumniHomePage = () => {
   useEffect(() => {
     fetchUserData();
     fetchFeaturedInstitutions();
+    //fetchRecentActivities(); // Add this line
   }, []);
 
   const fetchUserData = async () => {
@@ -103,8 +104,8 @@ const AlumniHomePage = () => {
           ? `Class of ${userData.graduation_year}`
           : "Alumni",
         school: userData.institution_name || "Your School",
-        totalDonated: 2500,
-        projectsSupported: 8,
+        totalDonated: 0, // ← CHANGED TO 0
+        projectsSupported: 0, // ← CHANGED TO 0
         avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
       });
 
@@ -178,15 +179,13 @@ const AlumniHomePage = () => {
             }`.trim() || "Location not specified",
           image: school.logo_url || getDefaultImage(index),
           needs: activeCampaigns.length,
-          alumni:
-            school.metadata?.alumni_count ||
-            Math.floor(Math.random() * 1000) + 100,
-          totalNeeded: totalNeeded || Math.floor(Math.random() * 20000) + 10000,
-          raised: totalRaised || Math.floor(Math.random() * 15000) + 5000,
+          alumni: school.metadata?.alumni_count || 0, // ← CHANGED TO 0
+          totalNeeded: totalNeeded || 0, // ← CHANGED TO 0
+          raised: totalRaised || 0, // ← CHANGED TO 0
           urgentNeed: urgentCampaign?.title || getDefaultUrgentNeed(index),
           urgentAmount: urgentCampaign
             ? urgentCampaign.target_amount - urgentCampaign.current_amount
-            : Math.floor(Math.random() * 5000) + 2000,
+            : 0, // ← CHANGED TO 0
           category: school.metadata?.category || getDefaultCategory(index),
           recentUpdate: getRecentUpdate(activeCampaigns, school.created_at),
           description:
@@ -207,6 +206,94 @@ const AlumniHomePage = () => {
       );
       setInstitutionsLoading(false);
     }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      const token = localStorage.getItem("jwtToken");
+
+      const response = await axios.get(
+        `${BASE_URL}/api/users/recent-activities`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Transform the API response to match our frontend structure
+      const activities = response.data.activities.map((activity) => {
+        let transformedActivity = {
+          id: activity.id,
+          type: activity.type,
+          school: activity.school_name,
+          date: formatTimeAgo(activity.created_at),
+          created_at: activity.created_at,
+        };
+
+        // Add type-specific fields
+        switch (activity.type) {
+          case "donation":
+            transformedActivity = {
+              ...transformedActivity,
+              amount: activity.amount,
+              project: activity.campaign_title,
+              icon: Heart,
+            };
+            break;
+          case "milestone":
+            transformedActivity = {
+              ...transformedActivity,
+              project: activity.campaign_title,
+              milestone: activity.milestone,
+              icon: Target,
+            };
+            break;
+          case "update":
+            transformedActivity = {
+              ...transformedActivity,
+              update: activity.update_text,
+              icon: TrendingUp,
+            };
+            break;
+          case "campaign_created":
+            transformedActivity = {
+              ...transformedActivity,
+              project: activity.campaign_title,
+              action: "New campaign created",
+              icon: Award,
+            };
+            break;
+          default:
+            transformedActivity.icon = Bell;
+        }
+
+        return transformedActivity;
+      });
+
+      setRecentActivities(activities);
+      setActivitiesLoading(false);
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+
+      // Fallback to empty array if API fails
+      setRecentActivities([]);
+      setActivitiesLoading(false);
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
   };
 
   // Helper functions for fallback data
@@ -237,58 +324,33 @@ const AlumniHomePage = () => {
   };
 
   const getRecentUpdate = (campaigns, schoolCreatedAt) => {
+    const calculateDaysAgo = (date) => {
+      return Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
+    };
+
+    let daysAgo;
+
     if (campaigns.length > 0) {
-      // Find the most recently created campaign
+      // Most recent campaign
       const latestCampaign = campaigns.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       )[0];
 
-      const daysAgo = Math.floor(
-        (new Date() - new Date(latestCampaign.created_at)) /
-          (1000 * 60 * 60 * 24)
-      );
-      if (daysAgo === 0) return "Today";
-      if (daysAgo === 1) return "1 day ago";
-      return `${daysAgo} days ago`;
+      daysAgo = calculateDaysAgo(latestCampaign.created_at);
+    } else {
+      // Fallback to school creation date
+      daysAgo = calculateDaysAgo(schoolCreatedAt);
     }
 
-    // Fallback to school creation date
-    const daysAgo = Math.floor(
-      (new Date() - new Date(schoolCreatedAt)) / (1000 * 60 * 60 * 24)
-    );
+    if (daysAgo === 0) return "Today";
+    if (daysAgo === 1) return "Yesterday";
     return `${daysAgo} days ago`;
   };
-
-  const recentActivities = [
-    {
-      type: "donation",
-      school: "Stanford Elementary School",
-      amount: 500,
-      project: "New Library Books",
-      date: "2 days ago",
-      icon: Heart,
-    },
-    {
-      type: "milestone",
-      school: "Cambridge International",
-      project: "Science Lab Equipment",
-      milestone: "75% funded",
-      date: "1 week ago",
-      icon: Target,
-    },
-    {
-      type: "update",
-      school: "Delhi Public School",
-      update: "Computer lab construction started!",
-      date: "2 weeks ago",
-      icon: TrendingUp,
-    },
-  ];
 
   const quickStats = [
     {
       label: "Total Donated",
-      value: `$${currentUser.totalDonated.toLocaleString()}`,
+      value: `₹${currentUser.totalDonated.toLocaleString()}`,
       icon: DollarSign,
       color: "text-gray-900",
     },
@@ -300,13 +362,13 @@ const AlumniHomePage = () => {
     },
     {
       label: "Schools Helped",
-      value: "3",
+      value: "0", // ← CHANGED TO 0
       icon: Building,
       color: "text-gray-900",
     },
     {
       label: "Impact Score",
-      value: "Gold",
+      value: "None", // ← CHANGED TO "None"
       icon: Award,
       color: "text-gray-900",
     },
@@ -463,6 +525,7 @@ const AlumniHomePage = () => {
           >
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
               <div className="flex-1">
+                {/* Left column - quick stats */}
                 <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
                   <Star className="h-5 w-5 text-gray-700 animate-pulse" />
                   <span className="text-sm font-semibold text-gray-800">
@@ -504,39 +567,78 @@ const AlumniHomePage = () => {
                 </div>
               </div>
 
+              {/* Right column - recent activities */}
               <div className="flex-1 lg:flex-none">
                 <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 border border-gray-200 shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Recent Activity
                   </h3>
                   <div className="space-y-4">
-                    {recentActivities.map((activity, index) => {
-                      const IconComponent = activity.icon;
-                      return (
+                    {activitiesLoading ? (
+                      // Loading state
+                      [1, 2, 3].map((index) => (
                         <div
                           key={index}
-                          className="flex items-center space-x-3 p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300"
+                          className="flex items-center space-x-3 p-3 rounded-xl bg-gray-100"
                         >
-                          <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
-                            <IconComponent className="h-5 w-5 text-white" />
-                          </div>
+                          <div className="w-10 h-10 bg-gray-300 rounded-xl animate-pulse"></div>
                           <div className="flex-1">
-                            <div className="text-sm font-semibold text-gray-800">
-                              {activity.type === "donation" &&
-                                `Donated $${activity.amount}`}
-                              {activity.type === "milestone" &&
-                                activity.milestone}
-                              {activity.type === "update" && "New Update"}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {activity.school} • {activity.date}
-                            </div>
+                            <div className="h-4 bg-gray-300 rounded animate-pulse mb-2"></div>
+                            <div className="h-3 bg-gray-300 rounded animate-pulse w-2/3"></div>
                           </div>
                         </div>
-                      );
-                    })}
+                      ))
+                    ) : recentActivities.length === 0 ? (
+                      // Empty state
+                      <div className="text-center py-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Bell className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          No recent activity yet
+                        </p>
+                        <button
+                          onClick={() => navigate("/alumni/institutions")}
+                          className="text-gray-700 hover:text-gray-900 text-sm font-medium mt-2"
+                        >
+                          Explore institutions to get started →
+                        </button>
+                      </div>
+                    ) : (
+                      // Actual activities
+                      recentActivities.slice(0, 3).map((activity, index) => {
+                        const IconComponent = activity.icon;
+                        return (
+                          <div
+                            key={activity.id || index}
+                            className="flex items-center space-x-3 p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300"
+                          >
+                            <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-gray-800">
+                                {activity.type === "donation" &&
+                                  `Donated ₹${activity.amount}`}
+                                {activity.type === "milestone" &&
+                                  activity.milestone}
+                                {activity.type === "update" && activity.update}
+                                {activity.type === "campaign_created" &&
+                                  activity.action}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {activity.school} • {activity.date}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                  <button className="w-full mt-4 text-center text-gray-700 hover:text-gray-900 font-semibold text-sm transition-colors duration-300">
+                  <button
+                    onClick={() => navigate("/alumni/activity")}
+                    className="w-full mt-4 text-center text-gray-700 hover:text-gray-900 font-semibold text-sm transition-colors duration-300"
+                  >
                     View All Activity →
                   </button>
                 </div>
@@ -699,7 +801,7 @@ const AlumniHomePage = () => {
                       className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent group-hover:from-gray-900/40 transition-all duration-500"></div>
+                    <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
 
                     <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
                       <span className="text-xs font-bold text-gray-800">
@@ -728,7 +830,7 @@ const AlumniHomePage = () => {
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
                         <span>Progress</span>
                         <span>
-                          ${institution.raised.toLocaleString()} of $
+                          ₹{institution.raised.toLocaleString()} of ₹
                           {institution.totalNeeded.toLocaleString()}
                         </span>
                       </div>
