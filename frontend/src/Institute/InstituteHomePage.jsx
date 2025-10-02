@@ -41,7 +41,21 @@ const InstituteHomePage = () => {
     urgency: "medium",
     image: "",
   });
+  const [showEditNeedModal, setShowEditNeedModal] = useState(false);
+  const [editingNeed, setEditingNeed] = useState(null);
+  const [editNeedData, setEditNeedData] = useState({
+    title: "",
+    description: "",
+    category: "Learning Resources",
+    goalAmount: "",
+    urgency: "medium",
+    image: "",
+  });
+  const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingNeed, setDeletingNeed] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const observerRef = useRef();
   const navigate = useNavigate();
@@ -391,6 +405,163 @@ const InstituteHomePage = () => {
     }
   };
 
+  const handleEditNeed = (need) => {
+    setEditingNeed(need);
+    setEditNeedData({
+      title: need.title,
+      description: need.description,
+      category: need.category,
+      goalAmount: need.goalAmount.toString(),
+      urgency: need.urgency,
+      image: "", // Always set to empty string
+    });
+    setShowEditNeedModal(true);
+  };
+
+  const handleEditNeedSubmit = async (e) => {
+    e.preventDefault();
+    setIsEditing(true);
+
+    try {
+      const token = localStorage.getItem("jwtToken");
+
+      const finalImage = editNeedData.image.trim()
+        ? editNeedData.image
+        : CATEGORY_IMAGES[editNeedData.category] || CATEGORY_IMAGES.General;
+
+      const response = await axios.put(
+        `${BASE_URL}/api/campaigns/${editingNeed.id}`,
+        {
+          title: editNeedData.title,
+          short_description: editNeedData.description,
+          body: editNeedData.description,
+          target_amount: parseInt(editNeedData.goalAmount),
+          metadata: {
+            category: editNeedData.category,
+            urgency: editNeedData.urgency,
+            image: finalImage,
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Refresh the funding needs list
+      const campaignsResponse = await axios.get(
+        `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const updatedFundingNeeds = campaignsResponse.data.campaigns.map(
+        (campaign) => ({
+          id: campaign.id,
+          title: campaign.title,
+          description: campaign.short_description || campaign.body || "",
+          goalAmount: campaign.target_amount,
+          raisedAmount: campaign.current_amount,
+          donors: 0,
+          status: campaign.status,
+          category: campaign.metadata?.category || "General",
+          dateCreated: campaign.created_at
+            ? campaign.created_at.split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          urgency: campaign.metadata?.urgency || "medium",
+          image: campaign.metadata?.image || CATEGORY_IMAGES.General,
+        })
+      );
+
+      setFundingNeeds(updatedFundingNeeds);
+      setShowEditNeedModal(false);
+      setEditingNeed(null);
+      setEditNeedData({
+        title: "",
+        description: "",
+        category: "Learning Resources",
+        goalAmount: "",
+        urgency: "medium",
+        image: "",
+      });
+
+      alert("Funding need updated successfully!");
+    } catch (error) {
+      console.error("Error updating funding need:", error);
+      const errorMessage = error.response?.data?.error || error.message;
+      alert(`Failed to update funding need: ${errorMessage}`);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeleteNeed = (need) => {
+    setDeletingNeed(need);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+
+    try {
+      const token = localStorage.getItem("jwtToken");
+
+      await axios.delete(`${BASE_URL}/api/campaigns/${deletingNeed.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Refresh the funding needs list
+      const campaignsResponse = await axios.get(
+        `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const updatedFundingNeeds = campaignsResponse.data.campaigns.map(
+        (campaign) => ({
+          id: campaign.id,
+          title: campaign.title,
+          description: campaign.short_description || campaign.body || "",
+          goalAmount: campaign.target_amount,
+          raisedAmount: campaign.current_amount,
+          donors: 0,
+          status: campaign.status,
+          category: campaign.metadata?.category || "General",
+          dateCreated: campaign.created_at
+            ? campaign.created_at.split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          urgency: campaign.metadata?.urgency || "medium",
+          image: campaign.metadata?.image || CATEGORY_IMAGES.General,
+        })
+      );
+
+      setFundingNeeds(updatedFundingNeeds);
+
+      // Update institution stats
+      setCurrentInstitution((prev) => ({
+        ...prev,
+        activeNeeds: updatedFundingNeeds.filter(
+          (need) => need.status === "active"
+        ).length,
+        completedProjects: updatedFundingNeeds.filter(
+          (need) => need.status === "completed"
+        ).length,
+      }));
+
+      setShowDeleteModal(false);
+      setDeletingNeed(null);
+
+      alert("Funding need deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting funding need:", error);
+      const errorMessage = error.response?.data?.error || error.message;
+      alert(`Failed to delete funding need: ${errorMessage}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {isLoading && (
@@ -428,15 +599,15 @@ const InstituteHomePage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-18">
-            {/* Left - Branding */}
+            {/* Left - Branding - Now visible on mobile too */}
             <div className="flex items-center space-x-3 lg:space-x-4 group">
               <div className="relative">
                 <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-md">
                   <Building className="h-5 w-5 lg:h-7 lg:w-7 text-gray-50 transform transition-transform duration-300" />
                 </div>
               </div>
-              <div className="hidden sm:block">
-                <span className="text-xl lg:text-2xl font-bold text-gray-900">
+              <div className="block sm:block">
+                <span className="text-lg lg:text-2xl font-bold text-gray-900">
                   Institution Portal
                 </span>
                 <div className="text-xs lg:text-sm text-gray-600 font-medium">
@@ -497,7 +668,7 @@ const InstituteHomePage = () => {
             </div>
           </div>
 
-          {/* Mobile Navigation Menu */}
+          {/* Mobile Navigation Menu - Added Notification Bell here */}
           {isMobileMenuOpen && (
             <div className="lg:hidden py-4 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
               <div className="flex flex-col space-y-4">
@@ -520,12 +691,25 @@ const InstituteHomePage = () => {
                   </div>
                 </div>
 
+                {/* Notification Bell in Mobile Menu */}
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    // Add your notification handler here
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <Bell className="h-5 w-5" />
+                  <span>Notifications</span>
+                </button>
+
+                <button
+                  onClick={() => {
                     navigate(
                       `/institute/profile/${currentInstitution?.schoolId}`
-                    )
-                  }
+                    );
+                    setIsMobileMenuOpen(false);
+                  }}
                   className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100"
                 >
                   <Settings className="h-5 w-5" />
@@ -713,15 +897,6 @@ const InstituteHomePage = () => {
                           {need.status === "active" ? "ACTIVE" : "COMPLETED"}
                         </span>
                       </div>
-
-                      {need.urgency === "high" && need.status === "active" && (
-                        <div className="absolute top-3 lg:top-4 left-3 lg:left-4 bg-red-500/95 backdrop-blur-sm rounded-xl lg:rounded-2xl px-2 lg:px-3 py-1 border border-red-200/50 shadow-sm">
-                          <span className="text-xs font-bold text-white flex items-center">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            URGENT
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     <div className="p-4 lg:p-6">
@@ -770,14 +945,25 @@ const InstituteHomePage = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 lg:gap-3">
-                        <button className="flex-1 bg-gray-800 text-white px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-1 lg:space-x-2 text-sm">
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => handleEditNeed(need)}
+                          className="bg-gray-800 text-white px-2 lg:px-4 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-1 text-xs sm:text-sm cursor-pointer"
+                        >
                           <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Edit</span>
                         </button>
-                        <button className="px-3 lg:px-6 py-2 lg:py-3 border border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center text-sm">
-                          <BarChart3 className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-                          <span className="hidden sm:inline">Analytics</span>
+                        <button
+                          onClick={() => handleDeleteNeed(need)}
+                          className="border border-red-300 text-red-600 rounded-xl lg:rounded-2xl hover:bg-red-50 hover:border-red-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center space-x-1 text-xs sm:text-sm cursor-pointer"
+                        >
+                          <X className="h-3 w-3 lg:h-4 lg:w-4" />
+                          <span>Delete</span>
+                        </button>
+                        <button className="border border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center space-x-1 text-xs sm:text-sm cursor-pointer">
+                          <BarChart3 className="h-3 w-3 lg:h-4 lg:w-4" />
+                          <span>Analytics</span>
                         </button>
                       </div>
                     </div>
@@ -1158,6 +1344,253 @@ const InstituteHomePage = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Need Modal */}
+      {showEditNeedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div
+            className="bg-white/95 backdrop-blur-xl rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 lg:p-6">
+              <div className="flex justify-between items-center mb-4 lg:mb-6">
+                <h3 className="text-xl lg:text-2xl font-bold text-gray-900">
+                  Edit Funding Need
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowEditNeedModal(false);
+                    setEditingNeed(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditNeedSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editNeedData.title}
+                    onChange={(e) =>
+                      setEditNeedData({
+                        ...editNeedData,
+                        title: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    placeholder="e.g., New Library Books, Science Lab Equipment..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    required
+                    value={editNeedData.description}
+                    onChange={(e) =>
+                      setEditNeedData({
+                        ...editNeedData,
+                        description: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300 h-24 lg:h-32"
+                    placeholder="Describe what this funding need is for and how it will help..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category *
+                    </label>
+                    <select
+                      value={editNeedData.category}
+                      onChange={(e) =>
+                        setEditNeedData({
+                          ...editNeedData,
+                          category: e.target.value,
+                        })
+                      }
+                      className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    >
+                      <option value="Learning Resources">
+                        Learning Resources
+                      </option>
+                      <option value="STEM">STEM</option>
+                      <option value="Facilities">Facilities</option>
+                      <option value="Technology">Technology</option>
+                      <option value="Sports">Sports</option>
+                      <option value="Arts">Arts</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Urgency Level *
+                    </label>
+                    <select
+                      value={editNeedData.urgency}
+                      onChange={(e) =>
+                        setEditNeedData({
+                          ...editNeedData,
+                          urgency: e.target.value,
+                        })
+                      }
+                      className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Goal Amount (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={editNeedData.goalAmount}
+                    onChange={(e) =>
+                      setEditNeedData({
+                        ...editNeedData,
+                        goalAmount: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    placeholder="5000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom Image URL (Optional)
+                    <span className="text-xs text-gray-500 ml-1">
+                      - Leave empty to use category default
+                    </span>
+                  </label>
+                  <input
+                    type="url"
+                    value={editNeedData.image}
+                    onChange={(e) =>
+                      setEditNeedData({
+                        ...editNeedData,
+                        image: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    placeholder="https://example.com/your-image.jpg"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditNeedModal(false);
+                      setEditingNeed(null);
+                    }}
+                    className="px-4 lg:px-6 py-2 lg:py-3 border-2 border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold w-full sm:w-auto"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isEditing}
+                    className="bg-gray-800 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 w-full sm:w-auto"
+                  >
+                    {isEditing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Updating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="h-4 w-4" />
+                        <span>Update Need</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div
+            className="bg-white/95 backdrop-blur-xl rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 lg:p-8">
+              {/* Header with subtle warning icon */}
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl border border-red-100">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+
+              {/* Content */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">
+                  Delete Campaign
+                </h3>
+
+                <p className="text-gray-600 leading-relaxed">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded-lg">
+                    {deletingNeed?.title}
+                  </span>
+                  ? This action cannot be undone and all associated data will be
+                  permanently removed.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletingNeed(null);
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-3 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl lg:rounded-2xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 flex items-center justify-center space-x-2 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>Delete</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

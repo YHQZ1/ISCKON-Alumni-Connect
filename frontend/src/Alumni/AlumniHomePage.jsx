@@ -448,13 +448,13 @@ const AlumniHomePage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
-            {/* Logo Section */}
+            {/* Logo Section - Now visible on mobile too */}
             <div className="flex items-center space-x-3 group">
               <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-md">
                 <GraduationCap className="h-6 w-6 text-gray-50" />
               </div>
-              <div className="hidden sm:block">
-                <span className="text-xl font-bold text-gray-900">
+              <div className="block sm:block">
+                <span className="text-lg font-bold text-gray-900">
                   Alumni Portal
                 </span>
                 <div className="text-xs text-gray-600 font-medium">
@@ -493,8 +493,7 @@ const AlumniHomePage = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex md:hidden items-center space-x-2">
-              <Bell className="h-6 w-6 text-gray-600 mr-2" />
+            <div className="flex md:hidden items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-xl bg-white/60 backdrop-blur-sm border border-gray-200"
@@ -540,7 +539,7 @@ const AlumniHomePage = () => {
                 className="w-full text-left p-3 rounded-xl hover:bg-gray-100 transition-colors flex items-center space-x-3"
               >
                 <Bell className="h-5 w-5 text-gray-600" />
-                <span>Activity</span>
+                <span>Notifications</span>
               </button>
               <button
                 onClick={handleLogout}

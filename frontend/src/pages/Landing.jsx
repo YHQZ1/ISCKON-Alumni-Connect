@@ -159,10 +159,10 @@ const Landing = () => {
   ];
 
   const stats = [
-    { number: "500+", label: "Schools Connected", icon: Building },
+    { number: "100+", label: "Schools Connected", icon: Building },
     { number: "25,000+", label: "Alumni Registered", icon: Users },
-    { number: "₹2.5M+", label: "Funds Raised", icon: Heart },
-    { number: "50+", label: "Countries Reached", icon: Globe },
+    { number: "₹25,00,000+", label: "Funds Raised", icon: Heart },
+    { number: "10+", label: "Countries Reached", icon: Globe },
   ];
 
   const handleSearch = (e) => {
