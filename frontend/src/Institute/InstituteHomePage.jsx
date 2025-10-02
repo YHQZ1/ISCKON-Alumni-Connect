@@ -15,6 +15,8 @@ import {
   CheckCircle,
   AlertCircle,
   Tag,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -40,6 +42,7 @@ const InstituteHomePage = () => {
     image: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const observerRef = useRef();
   const navigate = useNavigate();
 
@@ -67,12 +70,11 @@ const InstituteHomePage = () => {
   useEffect(() => {
     const fetchInstitutionData = async () => {
       try {
-        const res = await axios.get("/api/institution"); // your API
+        const res = await axios.get("/api/institution");
         setCurrentInstitution(res.data.institution);
         setFundingNeeds(res.data.fundingNeeds);
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        // Optionally show an error message
       } finally {
         setIsLoading(false);
       }
@@ -104,49 +106,57 @@ const InstituteHomePage = () => {
     }
   }, [currentInstitution?.schoolId]);
 
-  // Replace the CATEGORY_IMAGES object with this:
-  // Fix the CATEGORY_IMAGES object - use the same category names as in your dropdown
-const CATEGORY_IMAGES = {
-  "Learning Resources": "/category/learning-resources.png",
-  "STEM": "/category/stem.png",
-  "Technology": "/category/technology.png",
-  "Sports": "/category/sports.png",
-  "Arts": "/category/arts.png",
-  "Facilities": "/category/facilities.png",
-  "General": "/category/general.png",
-};
+  const CATEGORY_IMAGES = {
+    "Learning Resources": "/category/learning-resources.png",
+    STEM: "/category/stem.png",
+    Technology: "/category/technology.png",
+    Sports: "/category/sports.png",
+    Arts: "/category/arts.png",
+    Facilities: "/category/facilities.png",
+    General: "/category/general.png",
+  };
 
   const fetchInstituteData = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
 
-      // Fetch user data to get institution info
       const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const userData = userResponse.data.user;
 
-      // Fetch user's schools
       const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const userSchools = schoolsResponse.data.schools;
-
-      // Find the school owned by the logged-in user
       const userSchool = userSchools.find(
         (school) => school.owner_id === userData.id
       );
 
-      if (!userSchool) {
-        throw new Error(
-          "No school found for this user. Please create a school first."
-        );
-      }
+      console.log("🔍 Raw logo_url from API:", userSchool?.logo_url);
 
-      // Fetch campaigns for this school
+      // Fix the logo URL - handle both absolute and relative URLs
+      const getLogoUrl = (logoUrl) => {
+        if (!logoUrl) return null;
+
+        // If it's already a full URL, return as is
+        if (logoUrl.startsWith("http")) return logoUrl;
+
+        // If it's a blob URL, we need to handle it differently
+        if (logoUrl.startsWith("blob:")) return logoUrl;
+
+        // If it's a relative path, make it absolute
+        if (logoUrl.startsWith("/")) {
+          return `${BASE_URL}${logoUrl}`;
+        }
+
+        // For other cases, assume it's relative to base URL
+        return `${BASE_URL}/${logoUrl}`;
+      };
+
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${userSchool.id}`,
         {
@@ -154,8 +164,6 @@ const CATEGORY_IMAGES = {
         }
       );
 
-      // Transform backend campaigns to match your frontend structure
-      // In the fetchInstituteData function, update the campaign transformation:
       const backendFundingNeeds = campaignsResponse.data.campaigns.map(
         (campaign) => ({
           id: campaign.id,
@@ -173,7 +181,7 @@ const CATEGORY_IMAGES = {
           image:
             campaign.metadata?.image ||
             CATEGORY_IMAGES[campaign.metadata?.category] ||
-            CATEGORY_IMAGES.General, // Use category-based image
+            CATEGORY_IMAGES.General,
         })
       );
 
@@ -201,27 +209,24 @@ const CATEGORY_IMAGES = {
         description:
           userSchool.description ||
           "Supporting education with quality resources.",
-        logo:
-          userSchool.logo_url ||
-          "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
-        totalRaised, // dynamically calculated
-        totalDonors, // dynamically calculated
+        logo: getLogoUrl(userSchool?.logo_url), // Use the fixed URL function
+        totalRaised,
+        totalDonors,
         activeNeeds: backendFundingNeeds.filter(
           (need) => need.status === "active"
         ).length,
         completedProjects: backendFundingNeeds.filter(
           (need) => need.status === "completed"
         ).length,
-        schoolId: userSchool.id, // Store schoolId for creating campaigns
+        schoolId: userSchool.id,
       };
 
-      // Set the data to state
+      console.log("🔍 Final logo URL:", dynamicInstitution.logo);
+
       setCurrentInstitution(dynamicInstitution);
       setFundingNeeds(backendFundingNeeds);
     } catch (error) {
       console.error("Error fetching institute data:", error);
-
-      // Show error message if it's not a "no school" error
       if (!error.message.includes("No school found")) {
         alert("Failed to load data. Using demo data instead.");
       }
@@ -306,12 +311,10 @@ const CATEGORY_IMAGES = {
         );
       }
 
-      // Determine the image to use: user-provided URL or category-based image
       const finalImage = newNeedData.image.trim()
         ? newNeedData.image
         : CATEGORY_IMAGES[newNeedData.category] || CATEGORY_IMAGES.General;
 
-      // REAL API CALL - Create campaign in database
       const response = await axios.post(
         `${BASE_URL}/api/campaigns`,
         {
@@ -324,7 +327,7 @@ const CATEGORY_IMAGES = {
           metadata: {
             category: newNeedData.category,
             urgency: newNeedData.urgency,
-            image: finalImage, // Use the determined image
+            image: finalImage,
           },
         },
         {
@@ -332,7 +335,6 @@ const CATEGORY_IMAGES = {
         }
       );
 
-      // Refresh the funding needs list from backend
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
         {
@@ -340,7 +342,6 @@ const CATEGORY_IMAGES = {
         }
       );
 
-      // Transform backend campaigns to match your frontend structure
       const updatedFundingNeeds = campaignsResponse.data.campaigns.map(
         (campaign) => ({
           id: campaign.id,
@@ -355,11 +356,10 @@ const CATEGORY_IMAGES = {
             ? campaign.created_at.split("T")[0]
             : new Date().toISOString().split("T")[0],
           urgency: campaign.metadata?.urgency || "medium",
-          image: campaign.metadata?.image || CATEGORY_IMAGES.General, // Use category image as fallback
+          image: campaign.metadata?.image || CATEGORY_IMAGES.General,
         })
       );
 
-      // Update institution stats
       setCurrentInstitution((prev) => ({
         ...prev,
         activeNeeds: updatedFundingNeeds.filter(
@@ -370,10 +370,7 @@ const CATEGORY_IMAGES = {
         ).length,
       }));
 
-      // Set the updated funding needs
       setFundingNeeds(updatedFundingNeeds);
-
-      // Close modal and reset form
       setShowAddNeedModal(false);
       setNewNeedData({
         title: "",
@@ -404,6 +401,7 @@ const CATEGORY_IMAGES = {
           </div>
         </div>
       )}
+
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
@@ -428,34 +426,46 @@ const CATEGORY_IMAGES = {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex justify-between items-center h-18">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 lg:h-18">
             {/* Left - Branding */}
-            <div className="flex items-center space-x-4 group">
+            <div className="flex items-center space-x-3 lg:space-x-4 group">
               <div className="relative">
-                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md">
-                  <Building className="h-7 w-7 text-gray-50 transform transition-transform duration-300" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-800 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-md">
+                  <Building className="h-5 w-5 lg:h-7 lg:w-7 text-gray-50 transform transition-transform duration-300" />
                 </div>
               </div>
-              <div>
-                <span className="text-2xl font-bold text-gray-900">
+              <div className="hidden sm:block">
+                <span className="text-xl lg:text-2xl font-bold text-gray-900">
                   Institution Portal
                 </span>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-xs lg:text-sm text-gray-600 font-medium">
                   Manage Your School's Needs
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-6">
-              {/* Notifications */}
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
-              </div>
+            {/* Mobile Menu Button */}
+            <div className="flex items-center lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </button>
+            </div>
 
-              {/* Institution Info */}
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-6">
+              <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
               <div
-                onClick={() => navigate("/institute/profile")}
+                onClick={() =>
+                  navigate(`/institute/profile/${currentInstitution?.schoolId}`)
+                }
                 className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
               >
                 {currentInstitution?.logo ? (
@@ -478,26 +488,70 @@ const CATEGORY_IMAGES = {
 
                 <Settings className="h-5 w-5 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
-
-              {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center w-10 cursor-pointer h-10 rounded-2xl bg-white/50 backdrop-blur-md border border-gray-200 shadow-sm hover:shadow-md hover:bg-red-100 transition-all duration-300"
+                className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/50 backdrop-blur-md border border-gray-200 shadow-sm hover:shadow-md hover:bg-red-100 transition-all duration-300"
               >
                 <LogOut className="h-5 w-5 text-gray-600 hover:text-red-600 transition-colors" />
               </button>
             </div>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden py-4 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                  {currentInstitution?.logo ? (
+                    <img
+                      src={currentInstitution.logo}
+                      alt={currentInstitution.name}
+                      className="w-10 h-10 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <Building className="w-10 h-10 text-gray-400 rounded-xl border p-1" />
+                  )}
+                  <div>
+                    <div className="text-sm font-semibold text-gray-800">
+                      {currentInstitution?.display_name ||
+                        currentInstitution?.name}
+                    </div>
+                    <div className="text-xs text-gray-500">Admin Portal</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/institute/profile/${currentInstitution?.schoolId}`
+                    )
+                  }
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <Settings className="h-5 w-5" />
+                  <span>Profile Settings</span>
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* Welcome Section */}
       <section
-        className="pt-24 pb-12 relative overflow-hidden"
+        className="pt-20 lg:pt-24 pb-8 lg:pb-12 relative overflow-hidden"
         id="welcome"
         data-animate
       >
-        <div className="max-w-screen-2xl mx-auto px-0">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             className={`transform transition-all duration-1000 ${
               isVisible.welcome
@@ -505,36 +559,36 @@ const CATEGORY_IMAGES = {
                 : "translate-y-10 opacity-0"
             }`}
           >
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-              <div className="flex-1">
-                <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
-                  <Star className="h-5 w-5 text-gray-700 animate-pulse" />
-                  <span className="text-sm font-semibold text-gray-800">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-12">
+              <div className="flex-1 w-full">
+                <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 lg:px-6 py-2 lg:py-3 border border-gray-300 shadow-sm mb-4 lg:mb-6 hover:scale-105 transition-transform duration-300">
+                  <Star className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700 animate-pulse" />
+                  <span className="text-xs lg:text-sm font-semibold text-gray-800">
                     Institution Admin Dashboard
                   </span>
                 </div>
 
-                <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight text-gray-900">
+                <h1 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-6 leading-tight text-gray-900">
                   {currentInstitution?.name}
                   <br />
                   <span className="text-gray-800">Fundraising Management</span>
                 </h1>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                   {quickStats.map((stat, index) => {
                     const IconComponent = stat.icon;
                     return (
                       <div
                         key={index}
-                        className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                        className="bg-white/60 backdrop-blur-sm rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
                       >
                         <IconComponent
-                          className={`h-6 w-6 ${stat.color} mb-2`}
+                          className={`h-4 w-4 lg:h-6 lg:w-6 ${stat.color} mb-1 lg:mb-2`}
                         />
-                        <div className="text-2xl font-bold text-gray-800">
+                        <div className="text-lg lg:text-2xl font-bold text-gray-800">
                           {stat.value}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-xs lg:text-sm text-gray-600">
                           {stat.label}
                         </div>
                       </div>
@@ -543,26 +597,26 @@ const CATEGORY_IMAGES = {
                 </div>
               </div>
 
-              <div className="flex-1 lg:flex-none">
-                <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 border border-gray-200 shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <div className="flex-1 lg:flex-none w-full lg:w-96 mt-8 lg:mt-0">
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-gray-200 shadow-sm">
+                  <h3 className="text-base lg:text-lg font-semibold text-gray-800 mb-3 lg:mb-4">
                     Recent Donations
                   </h3>
-                  <div className="space-y-4">
-                    {recentDonations?.map((donation, index) => (
+                  <div className="space-y-3 lg:space-y-4 max-h-60 lg:max-h-80 overflow-y-auto">
+                    {recentDonations?.slice(0, 4).map((donation, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300"
+                        className="flex items-center justify-between p-2 lg:p-3 rounded-lg lg:rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300"
                       >
-                        <div>
-                          <div className="text-sm font-semibold text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-800 truncate">
                             {donation.anonymous ? "Anonymous" : donation.donor}
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-gray-600 truncate">
                             {donation.project}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0 ml-2">
                           <div className="text-sm font-bold text-gray-800">
                             ₹{donation.amount}
                           </div>
@@ -573,7 +627,7 @@ const CATEGORY_IMAGES = {
                       </div>
                     ))}
                   </div>
-                  <button className="w-full mt-4 text-center text-gray-700 hover:text-gray-900 font-semibold text-sm transition-colors duration-300">
+                  <button className="w-full mt-3 lg:mt-4 text-center text-gray-700 hover:text-gray-900 font-semibold text-xs lg:text-sm transition-colors duration-300">
                     View All Donations →
                   </button>
                 </div>
@@ -585,69 +639,54 @@ const CATEGORY_IMAGES = {
 
       {/* Tabs Section */}
       <section
-        className="py-8 bg-white/80 backdrop-blur-sm border-y border-gray-200"
+        className="py-4 lg:py-8 bg-white/80 backdrop-blur-sm border-y border-gray-200"
         id="tabs"
         data-animate
       >
-        <div className="max-w-screen-2xl mx-auto px-10">
-          <div className="flex space-x-8">
-            <button
-              className={`px-4 py-2 text-lg cursor-pointer font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === "needs"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => setActiveTab("needs")}
-            >
-              Funding Needs
-            </button>
-            <button
-              className={`px-4 py-2 text-lg font-semibold cursor-pointer rounded-xl transition-all duration-300 ${
-                activeTab === "profile"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => setActiveTab("profile")}
-            >
-              Institution Profile
-            </button>
-            <button
-              className={`px-4 py-2 text-lg cursor-pointer font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === "analytics"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => setActiveTab("analytics")}
-            >
-              Analytics
-            </button>
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-2 lg:space-x-8 overflow-x-auto scrollbar-hide">
+            {["needs", "profile", "analytics"].map((tab) => (
+              <button
+                key={tab}
+                className={`px-3 lg:px-4 py-2 text-sm lg:text-lg cursor-pointer font-semibold rounded-xl transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab
+                    ? "bg-gray-800 text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab === "needs" && "Funding Needs"}
+                {tab === "profile" && "Institution Profile"}
+                {tab === "analytics" && "Analytics"}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Main Content Section */}
-      <section id="content" className="py-12 bg-gray-100" data-animate>
-        <div className="max-w-screen-2xl mx-auto px-10">
+      <section id="content" className="py-8 lg:py-12 bg-gray-100" data-animate>
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           {activeTab === "needs" && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-bold text-gray-900">
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
                   Funding <span className="text-gray-800">Needs</span>
                 </h2>
                 <button
                   onClick={() => setShowAddNeedModal(true)}
-                  className="bg-gray-800 text-white cursor-pointer px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center space-x-2"
+                  className="bg-gray-800 text-white cursor-pointer px-4 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center space-x-2 w-full sm:w-auto justify-center"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-4 w-4 lg:h-5 lg:w-5" />
                   <span>Add New Need</span>
                 </button>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                 {fundingNeeds?.map((need, index) => (
                   <div
                     key={need.id}
-                    className={`group bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300 transform hover:scale-[1.02] ${
+                    className={`group bg-white/90 backdrop-blur-sm rounded-2xl lg:rounded-3xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300 transform hover:scale-[1.02] ${
                       isVisible.content
                         ? "translate-y-0 opacity-100"
                         : "translate-y-20 opacity-0"
@@ -658,12 +697,12 @@ const CATEGORY_IMAGES = {
                       <img
                         src={need.image}
                         alt={need.title}
-                        className="w-full h-48 object-cover transition-transform duration-700"
+                        className="w-full h-40 lg:h-48 object-cover transition-transform duration-700"
                         loading="lazy"
                       />
                       <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
 
-                      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
+                      <div className="absolute top-3 lg:top-4 right-3 lg:right-4 bg-white/95 backdrop-blur-sm rounded-xl lg:rounded-2xl px-2 lg:px-3 py-1 border border-gray-300 shadow-sm">
                         <span
                           className={`text-xs font-bold ${
                             need.status === "active"
@@ -676,7 +715,7 @@ const CATEGORY_IMAGES = {
                       </div>
 
                       {need.urgency === "high" && need.status === "active" && (
-                        <div className="absolute top-4 left-4 bg-red-500/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-red-200/50 shadow-sm">
+                        <div className="absolute top-3 lg:top-4 left-3 lg:left-4 bg-red-500/95 backdrop-blur-sm rounded-xl lg:rounded-2xl px-2 lg:px-3 py-1 border border-red-200/50 shadow-sm">
                           <span className="text-xs font-bold text-white flex items-center">
                             <AlertCircle className="h-3 w-3 mr-1" />
                             URGENT
@@ -685,33 +724,33 @@ const CATEGORY_IMAGES = {
                       )}
                     </div>
 
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300">
+                    <div className="p-4 lg:p-6">
+                      <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300 line-clamp-2">
                         {need.title}
                       </h3>
 
                       <div className="flex items-center text-gray-600 mb-3">
-                        <Tag className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium">
+                        <Tag className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2 text-gray-500" />
+                        <span className="text-xs lg:text-sm font-medium">
                           {need.category}
                         </span>
                       </div>
 
-                      <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                      <p className="text-xs lg:text-sm text-gray-600 mb-3 lg:mb-4 leading-relaxed line-clamp-3">
                         {need.description}
                       </p>
 
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <div className="mb-3 lg:mb-4">
+                        <div className="flex justify-between text-xs lg:text-sm text-gray-600 mb-1 lg:mb-2">
                           <span>Progress</span>
-                          <span>
+                          <span className="text-right">
                             ₹{need.raisedAmount.toLocaleString()} of ₹
                             {need.goalAmount.toLocaleString()}
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 lg:h-2">
                           <div
-                            className={`h-2 rounded-full transition-all duration-700 ${
+                            className={`h-1.5 lg:h-2 rounded-full transition-all duration-700 ${
                               need.status === "completed"
                                 ? "bg-gray-800"
                                 : "bg-gray-700"
@@ -731,14 +770,14 @@ const CATEGORY_IMAGES = {
                         </div>
                       </div>
 
-                      <div className="flex gap-3">
-                        <button className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-2">
-                          <Edit className="h-4 w-4" />
+                      <div className="flex gap-2 lg:gap-3">
+                        <button className="flex-1 bg-gray-800 text-white px-3 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-1 lg:space-x-2 text-sm">
+                          <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
                           <span>Edit</span>
                         </button>
-                        <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center">
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Analytics
+                        <button className="px-3 lg:px-6 py-2 lg:py-3 border border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center text-sm">
+                          <BarChart3 className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
+                          <span className="hidden sm:inline">Analytics</span>
                         </button>
                       </div>
                     </div>
@@ -749,121 +788,121 @@ const CATEGORY_IMAGES = {
           )}
 
           {activeTab === "profile" && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm p-8 border border-gray-200">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl lg:rounded-3xl shadow-sm p-4 lg:p-8 border border-gray-200">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6">
                 Institution <span className="text-gray-800">Profile</span>
               </h2>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <div className="mb-6">
+              <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+                <div className="space-y-4 lg:space-y-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Institution Name
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={currentInstitution?.name}
                       readOnly
                     />
                   </div>
 
-                  <div className="mb-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Location
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={currentInstitution?.location}
                       readOnly
                     />
                   </div>
 
-                  <div className="mb-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Institution Type
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={currentInstitution?.type}
                       readOnly
                     />
                   </div>
                 </div>
 
-                <div>
-                  <div className="mb-6">
+                <div className="space-y-4 lg:space-y-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Year Established
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={currentInstitution?.established}
                       readOnly
                     />
                   </div>
 
-                  <div className="mb-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Total Students
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={currentInstitution?.totalStudents}
                       readOnly
                     />
                   </div>
 
-                  <div className="mb-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Alumni Count
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                       value={
                         currentInstitution?.alumniCount?.toLocaleString() || "0"
-                      } // ← UPDATED LINE
+                      }
                       readOnly
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="mb-6">
+              <div className="mt-4 lg:mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
-                  className="w-full bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent h-32"
+                  className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent h-24 lg:h-32"
                   value={currentInstitution?.description}
                   readOnly
                 />
               </div>
 
-              <div className="mb-6">
+              <div className="mt-4 lg:mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Institution Logo
                 </label>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                   <img
                     src={currentInstitution?.logo}
                     alt="Institution Logo"
-                    className="w-20 h-20 rounded-2xl object-cover border border-gray-200"
+                    className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl object-cover border border-gray-200"
                   />
-                  <button className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center space-x-2">
-                    <Upload className="h-5 w-5" />
+                  <button className="bg-gray-800 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center space-x-2 w-full sm:w-auto justify-center">
+                    <Upload className="h-4 w-4 lg:h-5 lg:w-5" />
                     <span>Upload New Logo</span>
                   </button>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <button className="bg-gray-800 text-white px-8 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105">
+              <div className="flex justify-end mt-6">
+                <button className="bg-gray-800 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 w-full sm:w-auto">
                   Save Changes
                 </button>
               </div>
@@ -871,68 +910,69 @@ const CATEGORY_IMAGES = {
           )}
 
           {activeTab === "analytics" && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm p-8 border border-gray-200">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl lg:rounded-3xl shadow-sm p-4 lg:p-8 border border-gray-200">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6">
                 Fundraising <span className="text-gray-800">Analytics</span>
               </h2>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gray-100 rounded-2xl p-6 border border-gray-300">
-                  <div className="text-3xl font-bold text-gray-800 mb-2">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 mb-6 lg:mb-8">
+                <div className="bg-gray-100 rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-gray-300">
+                  <div className="text-xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">
                     ₹{currentInstitution?.totalRaised?.toLocaleString() || "0"}
                   </div>
-                  <div className="text-sm text-gray-700 font-medium">
+                  <div className="text-xs lg:text-sm text-gray-700 font-medium">
                     Total Raised
                   </div>
                 </div>
 
-                <div className="bg-gray-100 rounded-2xl p-6 border border-gray-300">
-                  <div className="text-3xl font-bold text-gray-800 mb-2">
+                <div className="bg-gray-100 rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-gray-300">
+                  <div className="text-xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">
                     {currentInstitution?.totalDonors?.toLocaleString() || "0"}
                   </div>
-                  <div className="text-sm text-gray-700 font-medium">
+                  <div className="text-xs lg:text-sm text-gray-700 font-medium">
                     Total Donors
                   </div>
                 </div>
 
-                <div className="bg-gray-100 rounded-2xl p-6 border border-gray-300">
-                  <div className="text-3xl font-bold text-gray-800 mb-2">
+                <div className="bg-gray-100 rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-gray-300 col-span-2 lg:col-span-1">
+                  <div className="text-xl lg:text-3xl font-bold text-gray-800 mb-1 lg:mb-2">
                     {averageCompletion}%
                   </div>
-                  <div className="text-sm text-gray-700 font-medium">
+                  <div className="text-xs lg:text-sm text-gray-700 font-medium">
                     Average Completion
                   </div>
                 </div>
               </div>
 
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              <div className="mb-6 lg:mb-8">
+                <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-3 lg:mb-4">
                   Donations Over Time
                 </h3>
-                <div className="bg-gray-100 rounded-2xl p-6 h-64 flex items-center justify-center">
-                  <div className="text-gray-400">
+                <div className="bg-gray-100 rounded-xl lg:rounded-2xl p-4 lg:p-6 h-48 lg:h-64 flex items-center justify-center">
+                  <div className="text-gray-400 text-sm lg:text-base">
                     Chart visualization would appear here
                   </div>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-3 lg:mb-4">
                     Top Funding Needs
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-3 lg:space-y-4">
                     {fundingNeeds
                       ?.filter((need) => need.status === "active")
+                      .slice(0, 5)
                       .map((need, index) => (
                         <div
                           key={need.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-200"
+                          className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 rounded-xl lg:rounded-2xl border border-gray-200"
                         >
-                          <div className="text-sm font-medium text-gray-800">
+                          <div className="text-sm font-medium text-gray-800 truncate flex-1 mr-2">
                             {need.title}
                           </div>
-                          <div className="text-sm font-bold text-gray-700">
+                          <div className="text-sm font-bold text-gray-700 flex-shrink-0">
                             {Math.round(
                               (need.raisedAmount / need.goalAmount) * 100
                             )}
@@ -944,24 +984,24 @@ const CATEGORY_IMAGES = {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-3 lg:mb-4">
                     Recent Donor Activity
                   </h3>
-                  <div className="space-y-4">
-                    {recentDonations?.map((donation, index) => (
+                  <div className="space-y-3 lg:space-y-4">
+                    {recentDonations?.slice(0, 5).map((donation, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-200"
+                        className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 rounded-xl lg:rounded-2xl border border-gray-200"
                       >
-                        <div>
-                          <div className="text-sm font-medium text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-800 truncate">
                             {donation.anonymous ? "Anonymous" : donation.donor}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 truncate">
                             {donation.project}
                           </div>
                         </div>
-                        <div className="text-sm font-bold text-gray-800">
+                        <div className="text-sm font-bold text-gray-800 flex-shrink-0 ml-2">
                           ₹{donation.amount}
                         </div>
                       </div>
@@ -976,33 +1016,21 @@ const CATEGORY_IMAGES = {
 
       {/* Add New Need Modal */}
       {showAddNeedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div
-            className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 w-full max-w-2xl mx-4 transform transition-all duration-300 scale-95 hover:scale-100"
+            className="bg-white/95 backdrop-blur-xl rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
+            <div className="p-4 lg:p-6">
+              <div className="flex justify-between items-center mb-4 lg:mb-6">
+                <h3 className="text-xl lg:text-2xl font-bold text-gray-900">
                   Add New Funding Need
                 </h3>
                 <button
                   onClick={() => setShowAddNeedModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
@@ -1018,7 +1046,7 @@ const CATEGORY_IMAGES = {
                     onChange={(e) =>
                       setNewNeedData({ ...newNeedData, title: e.target.value })
                     }
-                    className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
                     placeholder="e.g., New Library Books, Science Lab Equipment..."
                   />
                 </div>
@@ -1036,12 +1064,12 @@ const CATEGORY_IMAGES = {
                         description: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300 h-32"
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300 h-24 lg:h-32"
                     placeholder="Describe what this funding need is for and how it will help..."
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category *
@@ -1054,7 +1082,7 @@ const CATEGORY_IMAGES = {
                           category: e.target.value,
                         })
                       }
-                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                      className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
                     >
                       <option value="Learning Resources">
                         Learning Resources
@@ -1079,7 +1107,7 @@ const CATEGORY_IMAGES = {
                           urgency: e.target.value,
                         })
                       }
-                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                      className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -1103,7 +1131,7 @@ const CATEGORY_IMAGES = {
                         goalAmount: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
                     placeholder="5000"
                   />
                 </div>
@@ -1121,23 +1149,23 @@ const CATEGORY_IMAGES = {
                     onChange={(e) =>
                       setNewNeedData({ ...newNeedData, image: e.target.value })
                     }
-                    className="w-full bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
+                    className="w-full bg-gray-50 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-300"
                     placeholder="https://example.com/your-image.jpg"
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowAddNeedModal(false)}
-                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold"
+                    className="px-4 lg:px-6 py-2 lg:py-3 border-2 border-gray-300 text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold w-full sm:w-auto"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="bg-gray-800 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 w-full sm:w-auto"
                   >
                     {isSubmitting ? (
                       <>
@@ -1167,6 +1195,25 @@ const CATEGORY_IMAGES = {
           50% {
             transform: translateY(-10px) rotate(3deg);
           }
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-3 {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>

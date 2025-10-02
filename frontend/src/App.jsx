@@ -59,7 +59,7 @@ function App() {
             }
           />
           <Route
-            path="/institute/profile"
+            path="/institute/profile/:id"
             element={
               <ProtectedRoute allowedRoles={["institution"]}>
                 <InstituteProfile />

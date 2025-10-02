@@ -1,26 +1,77 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-// roles: array of allowed roles for this route
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const token = localStorage.getItem("jwtToken");
+  const [isValidating, setIsValidating] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-  if (!token) {
-    // Not logged in
-    return <Navigate to="/auth" replace />;
+  useEffect(() => {
+    validateToken();
+  }, [allowedRoles]); // Added allowedRoles to dependencies
+
+  const validateToken = () => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+      
+      if (!token) {
+        console.log("No token found");
+        setIsAuthorized(false);
+        setIsValidating(false);
+        return;
+      }
+
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      console.log("User role from token:", payload.userType);
+      console.log("Allowed roles:", allowedRoles);
+
+      const userRole = payload.userType;
+
+      // Check token expiration
+      const currentTime = Date.now() / 1000;
+      if (payload.exp && payload.exp < currentTime) {
+        console.log("Token expired");
+        localStorage.removeItem("jwtToken");
+        setIsAuthorized(false);
+        setIsValidating(false);
+        return;
+      }
+
+      // Check role authorization - make sure this matches exactly
+      if (!allowedRoles.includes(userRole)) {
+        console.log(`Role '${userRole}' not in allowed roles:`, allowedRoles);
+        setIsAuthorized(false);
+        setIsValidating(false);
+        return;
+      }
+
+      console.log("Authorization successful!");
+      setIsAuthorized(true);
+      setIsValidating(false);
+      
+    } catch (err) {
+      console.error("Token validation error:", err);
+      localStorage.removeItem("jwtToken");
+      setIsAuthorized(false);
+      setIsValidating(false);
+    }
+  };
+
+  if (isValidating) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div>Loading...</div>
+      </div>
+    );
   }
 
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1])); // decode JWT
-    const userRole = payload.userType; // assuming your JWT has `userType` like 'alumni' or 'institute'
-
-    if (!allowedRoles.includes(userRole)) {
-      // Logged in but wrong role
-      return <Navigate to="/unauthorized" replace />;
+  if (!isAuthorized) {
+    const token = localStorage.getItem("jwtToken");
+    
+    if (!token) {
+      return <Navigate to="/auth" replace />;
     }
-  } catch (err) {
-    // Invalid token
-    return <Navigate to="/auth" replace />;
+    
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children;

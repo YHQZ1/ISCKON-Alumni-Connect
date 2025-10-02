@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Filter,
   SortDesc,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -35,6 +37,7 @@ const AlumniHomePage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [recentActivities, setRecentActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const observerRef = useRef();
   const animationRef = useRef(null);
   const navigate = useNavigate();
@@ -85,7 +88,6 @@ const AlumniHomePage = () => {
   useEffect(() => {
     fetchUserData();
     fetchFeaturedInstitutions();
-    //fetchRecentActivities(); // Add this line
   }, []);
 
   const fetchUserData = async () => {
@@ -104,8 +106,8 @@ const AlumniHomePage = () => {
           ? `Class of ${userData.graduation_year}`
           : "Alumni",
         school: userData.institution_name || "Your School",
-        totalDonated: 0, // ← CHANGED TO 0
-        projectsSupported: 0, // ← CHANGED TO 0
+        totalDonated: 0,
+        projectsSupported: 0,
         avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
       });
 
@@ -123,7 +125,6 @@ const AlumniHomePage = () => {
 
       const token = localStorage.getItem("jwtToken");
 
-      // Fetch both schools and campaigns in parallel
       const [schoolsResponse, campaignsResponse] = await Promise.all([
         axios.get(`${BASE_URL}/api/schools`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -136,7 +137,6 @@ const AlumniHomePage = () => {
       const schools = schoolsResponse.data.schools;
       const campaigns = campaignsResponse.data.campaigns;
 
-      // Group campaigns by school_id
       const campaignsBySchool = {};
       campaigns.forEach((campaign) => {
         if (!campaignsBySchool[campaign.school_id]) {
@@ -145,14 +145,12 @@ const AlumniHomePage = () => {
         campaignsBySchool[campaign.school_id].push(campaign);
       });
 
-      // Transform schools data with real campaign information
       const transformedInstitutions = schools.map((school, index) => {
         const schoolCampaigns = campaignsBySchool[school.id] || [];
         const activeCampaigns = schoolCampaigns.filter(
           (camp) => camp.status === "active"
         );
 
-        // Calculate total funding needs and progress
         const totalNeeded = activeCampaigns.reduce(
           (sum, camp) => sum + (camp.target_amount || 0),
           0
@@ -162,7 +160,6 @@ const AlumniHomePage = () => {
           0
         );
 
-        // Get the most urgent campaign (highest remaining amount)
         const urgentCampaign = activeCampaigns.sort(
           (a, b) =>
             b.target_amount -
@@ -179,13 +176,13 @@ const AlumniHomePage = () => {
             }`.trim() || "Location not specified",
           image: school.logo_url || getDefaultImage(index),
           needs: activeCampaigns.length,
-          alumni: school.metadata?.alumni_count || 0, // ← CHANGED TO 0
-          totalNeeded: totalNeeded || 0, // ← CHANGED TO 0
-          raised: totalRaised || 0, // ← CHANGED TO 0
+          alumni: school.metadata?.alumni_count || 0,
+          totalNeeded: totalNeeded || 0,
+          raised: totalRaised || 0,
           urgentNeed: urgentCampaign?.title || getDefaultUrgentNeed(index),
           urgentAmount: urgentCampaign
             ? urgentCampaign.target_amount - urgentCampaign.current_amount
-            : 0, // ← CHANGED TO 0
+            : 0,
           category: school.metadata?.category || getDefaultCategory(index),
           recentUpdate: getRecentUpdate(activeCampaigns, school.created_at),
           description:
@@ -222,7 +219,6 @@ const AlumniHomePage = () => {
         }
       );
 
-      // Transform the API response to match our frontend structure
       const activities = response.data.activities.map((activity) => {
         let transformedActivity = {
           id: activity.id,
@@ -232,7 +228,6 @@ const AlumniHomePage = () => {
           created_at: activity.created_at,
         };
 
-        // Add type-specific fields
         switch (activity.type) {
           case "donation":
             transformedActivity = {
@@ -276,8 +271,6 @@ const AlumniHomePage = () => {
       setActivitiesLoading(false);
     } catch (error) {
       console.error("Error fetching recent activities:", error);
-
-      // Fallback to empty array if API fails
       setRecentActivities([]);
       setActivitiesLoading(false);
     }
@@ -296,7 +289,6 @@ const AlumniHomePage = () => {
     return `${Math.floor(diffDays / 30)} months ago`;
   };
 
-  // Helper functions for fallback data
   const getDefaultImage = (index) => {
     const images = [
       "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
@@ -331,14 +323,11 @@ const AlumniHomePage = () => {
     let daysAgo;
 
     if (campaigns.length > 0) {
-      // Most recent campaign
       const latestCampaign = campaigns.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       )[0];
-
       daysAgo = calculateDaysAgo(latestCampaign.created_at);
     } else {
-      // Fallback to school creation date
       daysAgo = calculateDaysAgo(schoolCreatedAt);
     }
 
@@ -362,13 +351,13 @@ const AlumniHomePage = () => {
     },
     {
       label: "Schools Helped",
-      value: "0", // ← CHANGED TO 0
+      value: "0",
       icon: Building,
       color: "text-gray-900",
     },
     {
       label: "Impact Score",
-      value: "None", // ← CHANGED TO "None"
+      value: "None",
       icon: Award,
       color: "text-gray-900",
     },
@@ -377,7 +366,6 @@ const AlumniHomePage = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     console.log("Searching for:", searchQuery);
-    // You can implement search functionality here by calling fetchFeaturedInstitutions with search query
   };
 
   const handleLogout = () => {
@@ -386,13 +374,10 @@ const AlumniHomePage = () => {
   };
 
   const handleDonate = (institutionId, campaignId = null) => {
-    // Navigate to donation page or open donation modal
     console.log("Donate to:", institutionId, "Campaign:", campaignId);
-    // You can implement donation flow here
   };
 
   const handleViewSchool = (institutionId) => {
-    // Navigate to school detail page
     navigate(`/school/${institutionId}`);
   };
 
@@ -436,21 +421,22 @@ const AlumniHomePage = () => {
           </div>
         </div>
       )}
-      {/* Background Elements */}
+
+      {/* Background Elements - Reduced on mobile */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
-          className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
+          className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse hidden md:block"
           style={parallaxOffset(0.3)}
         ></div>
         <div
-          className="absolute top-40 right-20 w-40 h-40 bg-gray-300/30 rounded-full blur-xl"
+          className="absolute top-40 right-20 w-40 h-40 bg-gray-300/30 rounded-full blur-xl hidden md:block"
           style={{
             ...parallaxOffset(0.5),
             animation: "float 6s ease-in-out infinite",
           }}
         ></div>
         <div
-          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gray-200/30 rounded-full blur-xl"
+          className="absolute bottom-40 left-1/4 w-36 h-36 bg-gray-200/30 rounded-full blur-xl hidden md:block"
           style={{
             ...parallaxOffset(0.4),
             animation: "float 8s ease-in-out infinite reverse",
@@ -458,27 +444,27 @@ const AlumniHomePage = () => {
         ></div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - Mobile Optimized */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex justify-between items-center h-18">
-            <div className="flex items-center space-x-4 group">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shadow-md">
-                  <GraduationCap className="h-7 w-7 text-gray-50 transform transition-transform duration-300" />
-                </div>
+        <div className="max-w-8xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo Section */}
+            <div className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-md">
+                <GraduationCap className="h-6 w-6 text-gray-50" />
               </div>
-              <div>
-                <span className="text-2xl font-bold text-gray-900">
+              <div className="hidden sm:block">
+                <span className="text-xl font-bold text-gray-900">
                   Alumni Portal
                 </span>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-xs text-gray-600 font-medium">
                   Support & Give Back
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-6">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               <div className="relative">
                 <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
               </div>
@@ -505,17 +491,76 @@ const AlumniHomePage = () => {
                 <LogOut className="h-5 w-5 text-gray-600 hover:text-red-600 transition-colors" />
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex md:hidden items-center space-x-2">
+              <Bell className="h-6 w-6 text-gray-600 mr-2" />
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-xl bg-white/60 backdrop-blur-sm border border-gray-200"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 px-4 py-4">
+            <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-100 rounded-2xl">
+              <User className="w-10 h-10 text-gray-400 rounded-full border p-1" />
+              <div>
+                <div className="font-semibold text-gray-800">
+                  {currentUser.name}
+                </div>
+                <div className="text-sm text-gray-500">{currentUser.batch}</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  navigate("/alumni/profile");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left p-3 rounded-xl hover:bg-gray-100 transition-colors flex items-center space-x-3"
+              >
+                <User className="h-5 w-5 text-gray-600" />
+                <span>Profile</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate("#");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left p-3 rounded-xl hover:bg-gray-100 transition-colors flex items-center space-x-3"
+              >
+                <Bell className="h-5 w-5 text-gray-600" />
+                <span>Activity</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left p-3 rounded-xl hover:bg-red-50 text-red-600 transition-colors flex items-center space-x-3"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* Welcome Section */}
+      {/* Welcome Section - Mobile Optimized */}
       <section
-        className="pt-24 pb-12 relative overflow-hidden"
+        className="pt-20 pb-8 px-4 sm:px-6 relative overflow-hidden"
         id="welcome"
         data-animate
       >
-        <div className="max-w-screen-2xl mx-auto px-10">
+        <div className="max-w-screen-2xl mx-auto">
           <div
             className={`transform transition-all duration-1000 ${
               isVisible.welcome
@@ -523,42 +568,44 @@ const AlumniHomePage = () => {
                 : "translate-y-10 opacity-0"
             }`}
           >
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-              <div className="flex-1">
-                {/* Left column - quick stats */}
-                <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
-                  <Star className="h-5 w-5 text-gray-700 animate-pulse" />
-                  <span className="text-sm font-semibold text-gray-800">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
+              <div className="flex-1 w-full">
+                {/* Welcome Badge */}
+                <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 border border-gray-300 shadow-sm mb-4">
+                  <Star className="h-4 w-4 text-gray-700" />
+                  <span className="text-xs font-semibold text-gray-800">
                     Welcome back, {currentUser.name.split(" ")[0]}!
                   </span>
                 </div>
 
-                <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight text-gray-900">
+                {/* Main Heading */}
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight text-gray-900">
                   Your Impact
                   <br />
                   <span className="text-gray-800">Continues to Grow</span>
                 </h1>
 
-                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                <p className="text-base sm:text-lg text-gray-600 mb-6 leading-relaxed">
                   Discover new opportunities to support educational institutions
-                  and track the impact of your contributions across the globe.
+                  and track the impact of your contributions.
                 </p>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Quick Stats - Grid Layout for Mobile */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
                   {quickStats.map((stat, index) => {
                     const IconComponent = stat.icon;
                     return (
                       <div
                         key={index}
-                        className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                        className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200 shadow-sm"
                       >
                         <IconComponent
-                          className={`h-6 w-6 ${stat.color} mb-2`}
+                          className={`h-5 w-5 ${stat.color} mb-1`}
                         />
-                        <div className="text-2xl font-bold text-gray-800">
+                        <div className="text-lg font-bold text-gray-800">
                           {stat.value}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-xs text-gray-600">
                           {stat.label}
                         </div>
                       </div>
@@ -567,57 +614,54 @@ const AlumniHomePage = () => {
                 </div>
               </div>
 
-              {/* Right column - recent activities */}
-              <div className="flex-1 lg:flex-none">
-                <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 border border-gray-200 shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              {/* Recent Activities - Stack below on mobile */}
+              <div className="w-full lg:w-96">
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-800 mb-3">
                     Recent Activity
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {activitiesLoading ? (
-                      // Loading state
-                      [1, 2, 3].map((index) => (
+                      [1, 2].map((index) => (
                         <div
                           key={index}
-                          className="flex items-center space-x-3 p-3 rounded-xl bg-gray-100"
+                          className="flex items-center space-x-3 p-2 rounded-xl bg-gray-100"
                         >
-                          <div className="w-10 h-10 bg-gray-300 rounded-xl animate-pulse"></div>
+                          <div className="w-8 h-8 bg-gray-300 rounded-xl animate-pulse"></div>
                           <div className="flex-1">
-                            <div className="h-4 bg-gray-300 rounded animate-pulse mb-2"></div>
-                            <div className="h-3 bg-gray-300 rounded animate-pulse w-2/3"></div>
+                            <div className="h-3 bg-gray-300 rounded animate-pulse mb-1"></div>
+                            <div className="h-2 bg-gray-300 rounded animate-pulse w-1/2"></div>
                           </div>
                         </div>
                       ))
                     ) : recentActivities.length === 0 ? (
-                      // Empty state
-                      <div className="text-center py-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Bell className="h-6 w-6 text-gray-400" />
+                      <div className="text-center py-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <Bell className="h-5 w-5 text-gray-400" />
                         </div>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-gray-500 text-xs">
                           No recent activity yet
                         </p>
                         <button
                           onClick={() => navigate("/alumni/institutions")}
-                          className="text-gray-700 hover:text-gray-900 text-sm font-medium mt-2"
+                          className="text-gray-700 hover:text-gray-900 text-xs font-medium mt-1"
                         >
-                          Explore institutions to get started →
+                          Explore institutions →
                         </button>
                       </div>
                     ) : (
-                      // Actual activities
-                      recentActivities.slice(0, 3).map((activity, index) => {
+                      recentActivities.slice(0, 2).map((activity, index) => {
                         const IconComponent = activity.icon;
                         return (
                           <div
                             key={activity.id || index}
-                            className="flex items-center space-x-3 p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300"
+                            className="flex items-center space-x-3 p-2 rounded-xl bg-gray-100"
                           >
-                            <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
-                              <IconComponent className="h-5 w-5 text-white" />
+                            <div className="w-8 h-8 bg-gray-800 rounded-xl flex items-center justify-center">
+                              <IconComponent className="h-4 w-4 text-white" />
                             </div>
-                            <div className="flex-1">
-                              <div className="text-sm font-semibold text-gray-800">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-gray-800 truncate">
                                 {activity.type === "donation" &&
                                   `Donated ₹${activity.amount}`}
                                 {activity.type === "milestone" &&
@@ -626,7 +670,7 @@ const AlumniHomePage = () => {
                                 {activity.type === "campaign_created" &&
                                   activity.action}
                               </div>
-                              <div className="text-xs text-gray-600">
+                              <div className="text-xs text-gray-600 truncate">
                                 {activity.school} • {activity.date}
                               </div>
                             </div>
@@ -637,7 +681,7 @@ const AlumniHomePage = () => {
                   </div>
                   <button
                     onClick={() => navigate("/alumni/activity")}
-                    className="w-full mt-4 text-center text-gray-700 hover:text-gray-900 font-semibold text-sm transition-colors duration-300"
+                    className="w-full mt-3 text-center text-gray-700 hover:text-gray-900 font-semibold text-xs transition-colors duration-300"
                   >
                     View All Activity →
                   </button>
@@ -648,13 +692,13 @@ const AlumniHomePage = () => {
         </div>
       </section>
 
-      {/* Search Section */}
+      {/* Search Section - Mobile Optimized */}
       <section
-        className="py-12 bg-white/80 backdrop-blur-sm border-y border-gray-200"
+        className="py-8 bg-white/80 backdrop-blur-sm border-y border-gray-200 px-4 sm:px-6"
         id="search"
         data-animate
       >
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto">
           <div
             className={`transform transition-all duration-1000 ${
               isVisible.search
@@ -662,43 +706,44 @@ const AlumniHomePage = () => {
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            <div className="text-center mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
                 Find <span className="text-gray-700">Schools to Support</span>
               </h2>
             </div>
 
             {/* Search and Filters */}
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gray-800 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200 shadow-sm group-hover:shadow-md transition-all duration-500">
-                  <Search className="absolute left-8 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6 group-hover:text-gray-600 transition-colors duration-300" />
+            <div className="space-y-4">
+              {/* Search Input */}
+              <div className="relative">
+                <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-sm">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input
                     type="text"
-                    placeholder="Search schools, colleges, or universities..."
+                    placeholder="Search schools..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-20 pr-40 py-6 text-lg rounded-3xl bg-transparent focus:outline-none text-gray-700 placeholder-gray-400 transition-all duration-300"
+                    className="w-full pl-12 pr-4 py-4 text-base rounded-2xl bg-transparent focus:outline-none text-gray-700 placeholder-gray-400"
                     onKeyPress={(e) => e.key === "Enter" && handleSearch(e)}
                   />
-                  <button
-                    onClick={handleSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-8 py-3 rounded-2xl hover:bg-gray-700 flex items-center space-x-3 transition-all duration-300 shadow-sm font-semibold hover:scale-105"
-                  >
-                    <span>Search</span>
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </button>
                 </div>
+                <button
+                  onClick={handleSearch}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold flex items-center space-x-2"
+                >
+                  <span className="hidden sm:inline">Search</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-4">
-                <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm">
-                  <Filter className="h-5 w-5 text-gray-500" />
+              {/* Filter Controls */}
+              <div className="flex flex-wrap justify-center gap-3">
+                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-gray-200 shadow-sm">
+                  <Filter className="h-4 w-4 text-gray-500" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="bg-transparent focus:outline-none text-gray-700 font-medium"
+                    className="bg-transparent focus:outline-none text-gray-700 font-medium text-sm"
                   >
                     <option value="all">All Categories</option>
                     <option value="elementary">Elementary</option>
@@ -707,12 +752,12 @@ const AlumniHomePage = () => {
                   </select>
                 </div>
 
-                <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200 shadow-sm">
-                  <SortDesc className="h-5 w-5 text-gray-500" />
+                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-gray-200 shadow-sm">
+                  <SortDesc className="h-4 w-4 text-gray-500" />
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-transparent focus:outline-none text-gray-700 font-medium"
+                    className="bg-transparent focus:outline-none text-gray-700 font-medium text-sm"
                   >
                     <option value="recent">Recently Updated</option>
                     <option value="urgent">Most Urgent</option>
@@ -725,50 +770,56 @@ const AlumniHomePage = () => {
         </div>
       </section>
 
-      {/* Featured Institutions */}
-      <section id="institutions" className="py-16 bg-gray-100" data-animate>
-        <div className="max-w-screen-2xl mx-auto px-10">
+      {/* Featured Institutions - Mobile Optimized */}
+      <section
+        id="institutions"
+        className="py-8 bg-gray-100 px-4 sm:px-6"
+        data-animate
+      >
+        <div className="max-w-screen-2xl mx-auto">
           <div
-            className={`text-center mb-12 transform transition-all duration-1000 ${
+            className={`text-center mb-8 transform transition-all duration-1000 ${
               isVisible.institutions
                 ? "translate-y-0 opacity-100"
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-6 py-3 border border-gray-300 shadow-sm mb-6 hover:scale-105 transition-transform duration-300">
-              <Globe className="h-5 w-5 text-gray-700 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 border border-gray-300 shadow-sm mb-4">
+              <Globe className="h-4 w-4 text-gray-700" />
+              <span className="text-xs font-semibold text-gray-800">
                 {sortedInstitutions.length} Schools Need Your Support
               </span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
               Featured <span className="text-gray-800">Institutions</span>
             </h2>
           </div>
 
           {institutionsLoading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center items-center py-8">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading institutions...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800 mx-auto"></div>
+                <p className="mt-3 text-gray-600 text-sm">
+                  Loading institutions...
+                </p>
               </div>
             </div>
           ) : institutionsError ? (
-            <div className="text-center py-12">
-              <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md mx-auto">
-                <p className="text-red-600 mb-4">{institutionsError}</p>
+            <div className="text-center py-8">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md mx-auto">
+                <p className="text-red-600 text-sm mb-3">{institutionsError}</p>
                 <button
                   onClick={fetchFeaturedInstitutions}
-                  className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300"
+                  className="bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 text-sm"
                 >
                   Try Again
                 </button>
               </div>
             </div>
           ) : sortedInstitutions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto border border-gray-200">
-                <p className="text-gray-600 mb-4">
+            <div className="text-center py-8">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto border border-gray-200">
+                <p className="text-gray-600 text-sm mb-3">
                   No institutions found matching your criteria.
                 </p>
                 <button
@@ -776,67 +827,61 @@ const AlumniHomePage = () => {
                     setSearchQuery("");
                     setSelectedCategory("all");
                   }}
-                  className="bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300"
+                  className="bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 text-sm"
                 >
                   Clear Filters
                 </button>
               </div>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {sortedInstitutions.map((institution, index) => (
                 <div
                   key={institution.id}
-                  className={`group bg-white/90 backdrop-blur-sm rounded-3xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200 hover:border-gray-300 transform hover:scale-105 ${
-                    isVisible.institutions
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-20 opacity-0"
-                  }`}
-                  style={{ transitionDelay: `${index * 150}ms` }}
+                  className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200"
                 >
                   <div className="relative overflow-hidden">
                     <img
                       src={institution.image}
                       alt={institution.name}
-                      className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-40 object-cover"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
-
-                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-1 border border-gray-300 shadow-sm">
+                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-1 border border-gray-300 shadow-sm">
                       <span className="text-xs font-bold text-gray-800">
                         Updated {institution.recentUpdate}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300">
+                  <div className="p-4">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
                       {institution.name}
                     </h3>
 
-                    <div className="flex items-center text-gray-600 mb-3">
-                      <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm font-medium">
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <MapPin className="h-3 w-3 mr-1 text-gray-500" />
+                      <span className="text-xs font-medium">
                         {institution.location}
                       </span>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                    <p className="text-xs text-gray-600 mb-3 leading-relaxed line-clamp-2">
                       {institution.description}
                     </p>
 
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>Progress</span>
                         <span>
                           ₹{institution.raised.toLocaleString()} of ₹
                           {institution.totalNeeded.toLocaleString()}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div
-                          className="bg-gray-800 h-2 rounded-full transition-all duration-700"
+                          className="bg-gray-800 h-1.5 rounded-full transition-all duration-700"
                           style={{
                             width: `${
                               institution.totalNeeded > 0
@@ -859,24 +904,25 @@ const AlumniHomePage = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center text-gray-600">
-                        <Users className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium">
+                        <Users className="h-3 w-3 mr-1 text-gray-500" />
+                        <span className="text-xs font-medium">
                           {institution.alumni} alumni
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-xs text-gray-600">
                         {institution.needs} active needs
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleDonate(institution.id)}
-                        className="flex-1 bg-gray-800 text-white px-6 py-3 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center justify-center space-x-2"
+                        className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold text-sm flex items-center justify-center space-x-1"
                       >
-                        <Heart className="h-4 w-4" />
+                        <Heart className="h-3 w-3" />
                         <span>Donate</span>
                       </button>
                       <button
@@ -885,9 +931,9 @@ const AlumniHomePage = () => {
                             `/alumni/institute-details/${institution.id}`
                           )
                         }
-                        className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold hover:scale-105 flex items-center justify-center"
+                        className="px-3 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold text-sm flex items-center justify-center"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
+                        <Eye className="h-3 w-3 mr-1" />
                         View
                       </button>
                     </div>
@@ -898,10 +944,10 @@ const AlumniHomePage = () => {
           )}
 
           {sortedInstitutions.length > 6 && (
-            <div className="text-center mt-12">
-              <button className="bg-gray-800 text-white px-12 py-4 rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm hover:shadow-md font-semibold hover:scale-105 flex items-center space-x-3 mx-auto">
-                <span>Load More Schools</span>
-                <ChevronRight className="h-5 w-5" />
+            <div className="text-center mt-8">
+              <button className="bg-gray-800 text-white px-8 py-3 rounded-xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold text-sm flex items-center space-x-2 mx-auto">
+                <span>Load More</span>
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}
@@ -917,6 +963,18 @@ const AlumniHomePage = () => {
           50% {
             transform: translateY(-10px) rotate(3deg);
           }
+        }
+        .line-clamp-1 {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 1;
+        }
+        .line-clamp-2 {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
         }
       `}</style>
     </div>

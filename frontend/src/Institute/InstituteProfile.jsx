@@ -15,11 +15,12 @@ import {
   Image as ImageIcon,
   FileText,
   Shield,
+  User,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+const BASE_URL = "http://localhost:4000";
 
 const InstituteProfile = () => {
   const [schoolData, setSchoolData] = useState({
@@ -42,27 +43,95 @@ const InstituteProfile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { id } = useParams(); // use :id if route like /schools/:id
+  const { id } = useParams();
 
   useEffect(() => {
-    fetchSchool();
-  }, []);
+    if (id) {
+      fetchSchool();
+    } else {
+      // Try to get school ID from user data or redirect
+      fetchUserSchool();
+    }
+  }, [id]);
+
+  const fetchUserSchool = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("jwtToken");
+
+      // First get user info to find their school
+      const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const userId = userResponse.data.user.id;
+
+      // Get all schools and find the one owned by this user
+      const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const userSchool = schoolsResponse.data.schools.find(
+        (school) => school.owner_id === userId
+      );
+
+      if (userSchool) {
+        // Redirect to the correct school profile
+        navigate(`/institute/profile/${userSchool.id}`, { replace: true });
+      } else {
+        setMessage(
+          "No school found for your account. Please create a school first."
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching user school:", error);
+      setMessage("Failed to load school profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchSchool = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
+      console.log("🔄 Fetching school with ID:", id);
+      console.log("🔑 Token available:", !!token);
+      console.log("🌐 Base URL:", BASE_URL);
+
       const response = await axios.get(`${BASE_URL}/api/schools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setSchoolData(response.data.school);
-      setIsLoading(false);
+      console.log("✅ Fetch response:", response.data);
+
+      if (response.data && response.data.school) {
+        console.log("📥 Received school data:", response.data.school);
+        setSchoolData(response.data.school);
+        setMessage("");
+      } else {
+        throw new Error("Invalid response format - no school data");
+      }
     } catch (error) {
-      console.error("Error fetching school:", error);
-      setMessage("Failed to load school profile");
+      console.error("❌ Error fetching school:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+
+      if (error.response?.status === 404) {
+        setMessage(
+          "School not found. It may have been deleted or you don't have access."
+        );
+      } else if (error.response?.status === 401) {
+        setMessage("Please log in to view this page");
+        navigate("/login");
+      } else {
+        setMessage("Failed to load school profile. Please try again later.");
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -73,14 +142,39 @@ const InstituteProfile = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
+
+    // Only validate fields that are actually required
     if (!schoolData.name.trim()) newErrors.name = "School name is required";
-    if (!schoolData.contact_email.trim())
-      newErrors.contact_email = "Contact email is required";
-    if (!schoolData.city.trim()) newErrors.city = "City is required";
+
+    if (
+      schoolData.contact_email &&
+      !/\S+@\S+\.\S+/.test(schoolData.contact_email)
+    ) {
+      newErrors.contact_email = "Email is invalid";
+    }
+
+    // Remove city requirement if it's not actually required
+    // if (!schoolData.city.trim()) newErrors.city = "City is required";
+
+    if (
+      schoolData.contact_phone &&
+      !/^\d{10}$/.test(schoolData.contact_phone.replace(/\D/g, ""))
+    ) {
+      newErrors.contact_phone = "Phone number must be 10 digits";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -89,72 +183,137 @@ const InstituteProfile = () => {
     if (!validateForm()) return;
 
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       const token = localStorage.getItem("jwtToken");
+
+      // Debug: Log what we're about to send
+      console.log("🔄 Starting profile update...");
+      console.log("School ID:", id);
+      console.log("Token available:", !!token);
+
+      // Prepare update data - only include fields that are allowed to be updated
+      const updateData = {
+        display_name: schoolData.display_name || null,
+        street: schoolData.street || null,
+        city: schoolData.city || null,
+        state: schoolData.state || null,
+        pincode: schoolData.pincode || null,
+        contact_person_name: schoolData.contact_person_name || null,
+        contact_email: schoolData.contact_email || null,
+        contact_phone: schoolData.contact_phone || null,
+        website: schoolData.website || null,
+        logo_url: schoolData.logo_url || null,
+        description: schoolData.description || null,
+      };
+
+      console.log("📤 Sending update data:", updateData);
+      console.log("📤 Full schoolData:", schoolData);
+
       const response = await axios.put(
         `${BASE_URL}/api/schools/${id}`,
-        schoolData,
+        updateData,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      setSchoolData(response.data.school);
-      setIsEditing(false);
-      setMessage("School profile updated successfully!");
+      console.log("✅ Update response:", response.data);
+
+      if (response.data && response.data.school) {
+        setSchoolData(response.data.school);
+        setIsEditing(false);
+        setMessage("School profile updated successfully!");
+        console.log("✅ Profile updated successfully!");
+      } else {
+        throw new Error("Invalid response format from server");
+      }
+
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      console.error("Error updating school:", error);
-      setMessage("Failed to update school profile");
+      console.error("❌ Error updating school:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+      console.error("❌ Error headers:", error.response?.headers);
+
+      if (error.response?.data?.error) {
+        setMessage(`Update failed: ${error.response.data.error}`);
+      } else if (error.response?.status === 401) {
+        setMessage("Authentication failed. Please log in again.");
+      } else if (error.response?.status === 403) {
+        setMessage("You don't have permission to update this school.");
+      } else if (error.response?.status === 404) {
+        setMessage("School not found.");
+      } else {
+        setMessage("Failed to update school profile. Please try again.");
+      }
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString(undefined, {
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setErrors({});
+    fetchSchool(); // Reload original data
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
+    return new Date(dateString).toLocaleDateString(undefined, {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+  };
 
   if (isLoading && !schoolData.name) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Back Button */}
-      <div className="max-w-5xl mx-auto mb-6">
-        <button
-          onClick={() => navigate("/institute/home")}
-          className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-300 font-medium group cursor-pointer"
-        >
-          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform duration-300" />
-          <span>Back to Dashboard</span>
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header with Back Button */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate("/institute/home")}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-300 font-medium group cursor-pointer mb-6"
+          >
+            <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform duration-300" />
+            <span>Back to Dashboard</span>
+          </button>
 
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Institution Profile
-          </h1>
-          <p className="text-gray-600">
-            Manage your institution’s information and details
-          </p>
+          {/* Profile Header */}
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Building className="h-12 w-12 text-white" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+              {schoolData.name}
+            </h1>
+            <p className="text-gray-600 text-lg">
+              {schoolData.display_name || "Educational Institution"}
+            </p>
+          </div>
         </div>
 
         {message && (
           <div
-            className={`mb-6 p-4 rounded-lg text-center ${
+            className={`mb-8 p-4 rounded-lg text-center max-w-2xl mx-auto ${
               message.includes("success")
-                ? "bg-green-100 text-green-700"
-                : "bg-amber-100 text-amber-700"
+                ? "bg-green-100 text-green-700 border border-green-200"
+                : "bg-amber-100 text-amber-700 border border-amber-200"
             }`}
           >
             {message}
@@ -162,30 +321,37 @@ const InstituteProfile = () => {
         )}
 
         {/* Profile Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">School Details</h2>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Institution Details
+              </h2>
+              <p className="text-gray-600">
+                Manage your institution's information and details
+              </p>
+            </div>
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium cursor-pointer"
+                className="mt-4 sm:mt-0 flex items-center space-x-2 bg-gray-800 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors duration-300 font-medium cursor-pointer"
               >
                 <Edit3 className="h-5 w-5" />
-                <span>Edit</span>
+                <span>Edit Profile</span>
               </button>
             ) : (
-              <div className="flex space-x-3">
+              <div className="mt-4 sm:mt-0 flex space-x-3">
                 <button
                   onClick={handleSaveProfile}
-                  disabled={isLoading}
-                  className="flex items-center space-x-2 bg-gray-800 text-white px-4 py-2 rounded-xl font-medium hover:bg-gray-700 disabled:opacity-50"
+                  disabled={isSaving}
+                  className="flex items-center space-x-2 bg-gray-800 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-700 transition-colors duration-300 disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="h-5 w-5" />
-                  <span>{isLoading ? "Saving..." : "Save"}</span>
+                  <span>{isSaving ? "Saving..." : "Save Changes"}</span>
                 </button>
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="flex items-center space-x-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium hover:bg-gray-300"
+                  onClick={handleCancelEdit}
+                  className="flex items-center space-x-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors duration-300 cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                   <span>Cancel</span>
@@ -194,198 +360,227 @@ const InstituteProfile = () => {
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Name */}
+          <div className="space-y-6">
+            {/* Name - Read Only */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 School Name
               </label>
               <div className="relative">
                 <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                 <input
                   type="text"
-                  name="name"
                   value={schoolData.name}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 focus:ring-2"
+                  disabled
+                  className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-100 opacity-70 cursor-not-allowed"
                 />
               </div>
-              {errors.name && <p className="text-rose-500 text-sm">{errors.name}</p>}
+              <p className="text-sm text-gray-500 mt-2">
+                School name cannot be changed
+              </p>
             </div>
 
-            {/* Display Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Display Name
-              </label>
-              <input
-                type="text"
-                name="display_name"
-                value={schoolData.display_name}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="w-full px-4 py-4 rounded-xl border bg-gray-50"
-              />
-            </div>
-
-            {/* Registration Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Registration Number
-              </label>
-              <div className="relative">
-                <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+            {/* Display Name and Registration Number */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Display Name
+                </label>
                 <input
                   type="text"
-                  name="registration_number"
-                  value={schoolData.registration_number}
+                  name="display_name"
+                  value={schoolData.display_name || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
+                  className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                  placeholder="Public display name"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Registration Number
+                </label>
+                <div className="relative">
+                  <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="text"
+                    name="registration_number"
+                    value={schoolData.registration_number || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Website */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Website
-              </label>
-              <div className="relative">
-                <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <input
-                  type="url"
-                  name="website"
-                  value={schoolData.website}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
-                />
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Contact Person
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="text"
+                    name="contact_person_name"
+                    value={schoolData.contact_person_name || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Contact Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="email"
+                    name="contact_email"
+                    value={schoolData.contact_email || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                      errors.contact_email
+                        ? "border-rose-500/50"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+                {errors.contact_email && (
+                  <p className="text-rose-500 text-sm mt-2">
+                    {errors.contact_email}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Contact Person */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Contact Person
-              </label>
-              <input
-                type="text"
-                name="contact_person_name"
-                value={schoolData.contact_person_name}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="w-full px-4 py-4 rounded-xl border bg-gray-50"
-              />
-            </div>
-
-            {/* Contact Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Contact Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <input
-                  type="email"
-                  name="contact_email"
-                  value={schoolData.contact_email}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
-                />
+            {/* Phone and Website */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Contact Phone
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="tel"
+                    name="contact_phone"
+                    value={schoolData.contact_phone || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                      errors.contact_phone
+                        ? "border-rose-500/50"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+                {errors.contact_phone && (
+                  <p className="text-rose-500 text-sm mt-2">
+                    {errors.contact_phone}
+                  </p>
+                )}
               </div>
-              {errors.contact_email && (
-                <p className="text-rose-500 text-sm">{errors.contact_email}</p>
-              )}
-            </div>
 
-            {/* Contact Phone */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Contact Phone
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <input
-                  type="tel"
-                  name="contact_phone"
-                  value={schoolData.contact_phone}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
-                />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Website
+                </label>
+                <div className="relative">
+                  <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="url"
+                    name="website"
+                    value={schoolData.website || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                    placeholder="https://example.com"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Address */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Address
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <input
                   type="text"
                   name="street"
                   placeholder="Street"
-                  value={schoolData.street}
+                  value={schoolData.street || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="px-4 py-4 rounded-xl border bg-gray-50"
+                  className="px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
                 />
                 <input
                   type="text"
                   name="city"
                   placeholder="City"
-                  value={schoolData.city}
+                  value={schoolData.city || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="px-4 py-4 rounded-xl border bg-gray-50"
+                  className={`px-4 py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 ${
+                    errors.city ? "border-rose-500/50" : "border-gray-300"
+                  }`}
                 />
                 <input
                   type="text"
                   name="state"
                   placeholder="State"
-                  value={schoolData.state}
+                  value={schoolData.state || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="px-4 py-4 rounded-xl border bg-gray-50"
+                  className="px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
                 />
                 <input
                   type="text"
                   name="pincode"
                   placeholder="Pincode"
-                  value={schoolData.pincode}
+                  value={schoolData.pincode || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="px-4 py-4 rounded-xl border bg-gray-50"
+                  className="px-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
                 />
               </div>
-              {errors.city && <p className="text-rose-500 text-sm">{errors.city}</p>}
+              {errors.city && (
+                <p className="text-rose-500 text-sm mt-2">{errors.city}</p>
+              )}
             </div>
 
-            {/* Logo */}
+            {/* Logo and Description */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Logo URL
+                </label>
+                <div className="relative">
+                  <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                  <input
+                    type="text"
+                    name="logo_url"
+                    value={schoolData.logo_url || ""}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30"
+                    placeholder="https://example.com/logo.png"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Logo URL
-              </label>
-              <div className="relative">
-                <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <input
-                  type="text"
-                  name="logo_url"
-                  value={schoolData.logo_url}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
-                />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Description
               </label>
               <div className="relative">
@@ -393,40 +588,56 @@ const InstituteProfile = () => {
                 <textarea
                   name="description"
                   rows="4"
-                  value={schoolData.description}
+                  value={schoolData.description || ""}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border bg-gray-50"
+                  className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 resize-none"
                   placeholder="Write a short description about your institution"
                 />
               </div>
             </div>
 
-            {/* Metadata: created_at */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Created At
-              </label>
-              <input
-                type="text"
-                value={formatDate(schoolData.created_at)}
-                disabled
-                className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-100 opacity-70 cursor-not-allowed"
-              />
+            {/* Metadata */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Created At
+                </label>
+                <input
+                  type="text"
+                  value={formatDate(schoolData.created_at)}
+                  disabled
+                  className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-100 opacity-70 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Country
+                </label>
+                <input
+                  type="text"
+                  value={schoolData.country || "India"}
+                  disabled
+                  className="w-full px-4 py-4 rounded-xl border border-gray-300 bg-gray-100 opacity-70 cursor-not-allowed"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Verification Info */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8 mt-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Verification</h2>
+        {/* Verification Info - Updated to match your schema */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8 mt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Institution Status
+          </h2>
           <div className="flex items-center space-x-3 bg-gray-100 p-4 rounded-xl">
             <Shield className="h-6 w-6 text-gray-600" />
-            <p className="text-gray-600">
-              {schoolData.verified
-                ? `Verified at ${formatDate(schoolData.verified_at)}`
-                : "Not verified yet"}
-            </p>
+            <div>
+              <p className="text-gray-600 font-medium">Active Institution</p>
+              <p className="text-sm text-gray-500">
+                Registered on {formatDate(schoolData.created_at)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
