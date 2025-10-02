@@ -87,24 +87,24 @@ const InstituteHomePage = () => {
     fetchInstituteData();
   }, []);
 
-  useEffect(() => {
-    const fetchRecentDonations = async () => {
-      try {
-        const token = localStorage.getItem("jwtToken");
-        const response = await axios.get(
-          `${BASE_URL}/api/donations?school_id=${currentInstitution?.schoolId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setRecentDonations(response.data.donations || []);
-      } catch (err) {
-        console.error("Failed to fetch recent donations", err);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchRecentDonations = async () => {
+  //     try {
+  //       const token = localStorage.getItem("jwtToken");
+  //       const response = await axios.get(
+  //         `${BASE_URL}/api/donations?school_id=${currentInstitution?.schoolId}`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
+  //       setRecentDonations(response.data.donations || []);
+  //     } catch (err) {
+  //       console.error("Failed to fetch recent donations", err);
+  //     }
+  //   };
 
-    if (currentInstitution?.schoolId) {
-      fetchRecentDonations();
-    }
-  }, [currentInstitution?.schoolId]);
+  //   if (currentInstitution?.schoolId) {
+  //     fetchRecentDonations();
+  //   }
+  // }, [currentInstitution?.schoolId]);
 
   const CATEGORY_IMAGES = {
     "Learning Resources": "/category/learning-resources.png",
@@ -597,7 +597,7 @@ const InstituteHomePage = () => {
                 </div>
               </div>
 
-              <div className="flex-1 lg:flex-none w-full lg:w-96 mt-8 lg:mt-0">
+              {/* <div className="flex-1 lg:flex-none w-full lg:w-96 mt-8 lg:mt-0">
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-gray-200 shadow-sm">
                   <h3 className="text-base lg:text-lg font-semibold text-gray-800 mb-3 lg:mb-4">
                     Recent Donations
@@ -631,7 +631,7 @@ const InstituteHomePage = () => {
                     View All Donations →
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -882,29 +882,6 @@ const InstituteHomePage = () => {
                   value={currentInstitution?.description}
                   readOnly
                 />
-              </div>
-
-              <div className="mt-4 lg:mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Institution Logo
-                </label>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                  <img
-                    src={currentInstitution?.logo}
-                    alt="Institution Logo"
-                    className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl object-cover border border-gray-200"
-                  />
-                  <button className="bg-gray-800 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 flex items-center space-x-2 w-full sm:w-auto justify-center">
-                    <Upload className="h-4 w-4 lg:h-5 lg:w-5" />
-                    <span>Upload New Logo</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <button className="bg-gray-800 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-xl lg:rounded-2xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold hover:scale-105 w-full sm:w-auto">
-                  Save Changes
-                </button>
               </div>
             </div>
           )}

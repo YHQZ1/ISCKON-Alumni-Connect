@@ -14,13 +14,14 @@ import {
   Hash,
   Image as ImageIcon,
   FileText,
+  Image,
   Shield,
   User,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
-const BASE_URL = "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const InstituteProfile = () => {
   const [schoolData, setSchoolData] = useState({
@@ -40,6 +41,7 @@ const InstituteProfile = () => {
     logo_url: "",
     created_at: "",
   });
+  const [formData, setFormData] = useState({ logo: null });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,6 +154,22 @@ const InstituteProfile = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        type === "checkbox" ? checked : type === "file" ? files[0] : value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -186,67 +204,49 @@ const InstituteProfile = () => {
       setIsSaving(true);
       const token = localStorage.getItem("jwtToken");
 
-      // Debug: Log what we're about to send
-      console.log("🔄 Starting profile update...");
-      console.log("School ID:", id);
-      console.log("Token available:", !!token);
+      const formDataToSend = new FormData();
 
-      // Prepare update data - only include fields that are allowed to be updated
-      const updateData = {
-        display_name: schoolData.display_name || null,
-        street: schoolData.street || null,
-        city: schoolData.city || null,
-        state: schoolData.state || null,
-        pincode: schoolData.pincode || null,
-        contact_person_name: schoolData.contact_person_name || null,
-        contact_email: schoolData.contact_email || null,
-        contact_phone: schoolData.contact_phone || null,
-        website: schoolData.website || null,
-        logo_url: schoolData.logo_url || null,
-        description: schoolData.description || null,
-      };
+      // Add all the fields to FormData
+      formDataToSend.append("display_name", schoolData.display_name || "");
+      formDataToSend.append("street", schoolData.street || "");
+      formDataToSend.append("city", schoolData.city || "");
+      formDataToSend.append("state", schoolData.state || "");
+      formDataToSend.append("pincode", schoolData.pincode || "");
+      formDataToSend.append(
+        "contact_person_name",
+        schoolData.contact_person_name || ""
+      );
+      formDataToSend.append("contact_email", schoolData.contact_email || "");
+      formDataToSend.append("contact_phone", schoolData.contact_phone || "");
+      formDataToSend.append("website", schoolData.website || "");
+      formDataToSend.append("description", schoolData.description || "");
 
-      console.log("📤 Sending update data:", updateData);
-      console.log("📤 Full schoolData:", schoolData);
+      // Add logo file if selected
+      if (formData.logo) {
+        formDataToSend.append("logo", formData.logo);
+      }
 
       const response = await axios.put(
         `${BASE_URL}/api/schools/${id}`,
-        updateData,
+        formDataToSend,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      console.log("✅ Update response:", response.data);
-
       if (response.data && response.data.school) {
         setSchoolData(response.data.school);
+        setFormData({ logo: null }); // Reset file input
         setIsEditing(false);
         setMessage("School profile updated successfully!");
-        console.log("✅ Profile updated successfully!");
-      } else {
-        throw new Error("Invalid response format from server");
       }
-
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      console.error("❌ Error updating school:", error);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
-      console.error("❌ Error headers:", error.response?.headers);
-
+      console.error("Error updating school:", error);
       if (error.response?.data?.error) {
         setMessage(`Update failed: ${error.response.data.error}`);
-      } else if (error.response?.status === 401) {
-        setMessage("Authentication failed. Please log in again.");
-      } else if (error.response?.status === 403) {
-        setMessage("You don't have permission to update this school.");
-      } else if (error.response?.status === 404) {
-        setMessage("School not found.");
       } else {
         setMessage("Failed to update school profile. Please try again.");
       }
@@ -576,6 +576,31 @@ const InstituteProfile = () => {
                     placeholder="https://example.com/logo.png"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Institution Logo
+                </label>
+                <div className="relative">
+                  <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4 sm:h-5 sm:w-5" />
+                  <input
+                    type="file"
+                    name="logo"
+                    accept="image/jpeg,image/png"
+                    onChange={handleFileChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                      errors.logo
+                        ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
+                        : "border-gray-300"
+                    } ${!isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+                {errors.logo && (
+                  <p className="text-rose-500 text-xs sm:text-sm mt-1">
+                    {errors.logo}
+                  </p>
+                )}
               </div>
             </div>
 

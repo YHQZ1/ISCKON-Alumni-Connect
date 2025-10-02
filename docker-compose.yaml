@@ -1,5 +1,3 @@
-version: '3.9'
-
 services: 
   backend:
     image: uttkarsh0/alumni-connect-backend:latest
