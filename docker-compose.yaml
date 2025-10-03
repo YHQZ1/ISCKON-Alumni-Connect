@@ -1,6 +1,6 @@
 services: 
   backend:
-    image: uttkarsh0/alumni-connect-backend:latest
+    build: ./backend      
     container_name: alumni-backend
     ports: 
       - "4000:4000"
@@ -8,7 +8,7 @@ services:
       - backend/.env
 
   frontend:
-    image: uttkarsh0/alumni-connect-frontend:latest
+    build: ./frontend     
     container_name: alumni-frontend
     ports: 
       - "5173:80"

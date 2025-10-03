@@ -34,7 +34,7 @@ app.use("/api/users", authenticateToken, userRoutes);
 // Choose whether schools listing is public or protected.
 // We'll protect creation but allow public GETs in routes: keep authenticateToken to protect POST only.
 // To keep it simple: protect all school routes; if you want public listing move authenticateToken to router-level.
-app.use("/api/schools", authenticateToken, schoolRoutes);
+app.use("/api/schools", schoolRoutes);
 
 // Health
 app.get("/", (_req, res) => res.send("Backend live"));

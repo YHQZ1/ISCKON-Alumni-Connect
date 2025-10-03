@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Filter,
   SortDesc,
+  IndianRupee,
   Menu,
   X,
 } from "lucide-react";
@@ -339,8 +340,8 @@ const AlumniHomePage = () => {
   const quickStats = [
     {
       label: "Total Donated",
-      value: `₹${currentUser.totalDonated.toLocaleString()}`,
-      icon: DollarSign,
+      value: `${currentUser.totalDonated.toLocaleString()}`,
+      icon: IndianRupee,
       color: "text-gray-900",
     },
     {
