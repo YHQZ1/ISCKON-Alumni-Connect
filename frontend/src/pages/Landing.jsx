@@ -629,11 +629,6 @@ const Landing = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
-                  <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1 border border-gray-300 shadow-sm">
-                    <span className="text-xs font-bold text-gray-800">
-                      {institution.needs} active needs
-                    </span>
-                  </div>
                 </div>
                 <div className="p-4">
                   <h3 className="text-base font-bold text-gray-900 mb-2">
@@ -652,7 +647,10 @@ const Landing = () => {
                         {institution.alumni} alumni
                       </span>
                     </div>
-                    <button className="bg-gray-800 text-white px-4 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold cursor-pointer" onClick={() => navigate("/auth")}>
+                    <button
+                      className="bg-gray-800 text-white px-4 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold cursor-pointer"
+                      onClick={() => navigate("/auth")}
+                    >
                       View Details
                     </button>
                   </div>
@@ -679,11 +677,6 @@ const Landing = () => {
                           loading="lazy"
                         />
                         <div className="absolute inset-0 group-hover:from-gray-900/40 transition-all duration-500"></div>
-                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1 border border-gray-300 shadow-sm">
-                          <span className="text-sm font-bold text-gray-800">
-                            {institution.needs} active needs
-                          </span>
-                        </div>
                       </div>
                       <div className="p-6 flex-1 flex flex-col justify-between">
                         <h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300 line-clamp-2">
@@ -702,7 +695,10 @@ const Landing = () => {
                               {institution.alumni} alumni
                             </span>
                           </div>
-                          <button className="bg-gray-800 text-white px-5 cursor-pointer py-2 rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold" onClick={() => navigate("/auth")}>
+                          <button
+                            className="bg-gray-800 text-white px-5 cursor-pointer py-2 rounded-lg hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold"
+                            onClick={() => navigate("/auth")}
+                          >
                             View Details
                           </button>
                         </div>
