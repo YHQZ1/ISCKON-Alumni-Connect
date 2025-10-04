@@ -1,0 +1,10 @@
+If you ever want to pull these images on another machine, just do:
+
+docker pull uttkarsh0/alumni-connect-frontend:latest
+docker pull uttkarsh0/alumni-connect-backend:latest
+
+--------------------------------------------------------------------
+And then run them with:
+
+docker run -it --rm uttkarsh0/alumni-connect-frontend:latest
+docker run -it --rm uttkarsh0/alumni-connect-backend:latest
