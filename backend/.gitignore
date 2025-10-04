@@ -3,13 +3,12 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 .pnpm-debug.log*
+package-lock.json
 
 # Logs
 logs/
 *.log
-logs/*.log
 
 # Environment variables
 .env
@@ -45,12 +44,8 @@ Thumbs.db
 *.bak
 *.orig
 
-# Coverage directory
+# Coverage
 coverage/
 
 # Test output
 *.test-results.xml
-
-#env
-.env
-.env.*
