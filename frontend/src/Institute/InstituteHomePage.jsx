@@ -6,12 +6,11 @@ import {
   LogOut,
   Bell,
   Settings,
-  DollarSign,
+  IndianRupee,
   Target,
   Plus,
   Edit,
   BarChart3,
-  Upload,
   CheckCircle,
   AlertCircle,
   Tag,
@@ -24,7 +23,6 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const InstituteHomePage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [currentInstitution, setCurrentInstitution] = useState(null);
@@ -57,6 +55,11 @@ const InstituteHomePage = () => {
   const [deletingNeed, setDeletingNeed] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const observerRef = useRef();
   const navigate = useNavigate();
 
@@ -128,6 +131,67 @@ const InstituteHomePage = () => {
     Arts: "/category/arts.png",
     Facilities: "/category/facilities.png",
     General: "/category/general.png",
+  };
+
+  // Notification Component
+  const Notification = ({ message, type, onClose }) => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }, [onClose]);
+
+    const getBackgroundColor = () => {
+      switch (type) {
+        case "success":
+          return "bg-white-500";
+        case "error":
+          return "bg-red-500";
+        case "warning":
+          return "bg-yellow-500";
+        default:
+          return "bg-gray-800";
+      }
+    };
+
+    const getIcon = () => {
+      switch (type) {
+        case "success":
+          return <CheckCircle className="h-5 w-5" />;
+        case "error":
+          return <AlertCircle className="h-5 w-5" />;
+        default:
+          return <CheckCircle className="h-5 w-5" />;
+      }
+    };
+
+    return (
+      <div
+        className={`fixed top-20 right-4 z-50 ${getBackgroundColor()} text-black px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border border-white/20 transform animate-slide-in`}
+      >
+        <div className="flex items-center space-x-3">
+          {getIcon()}
+          <span className="font-medium">{message}</span>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white transition-colors ml-2"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="absolute bottom-0 left-2 w-[95%] h-1 bg-black/30 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-black/80 rounded-full animate-progress"
+            style={{ animationDuration: "4s" }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const showNotification = (message, type = "success") => {
+    setNotification({ show: true, message, type });
   };
 
   const fetchInstituteData = async () => {
@@ -217,9 +281,9 @@ const InstituteHomePage = () => {
           userData.location ||
           "Location not set",
         type: "Educational Institution",
-        established: 1985,
-        totalStudents: 450,
-        alumniCount: 3200,
+        established: 2007,
+        totalStudents: 0,
+        alumniCount: 0,
         description:
           userSchool.description ||
           "Supporting education with quality resources.",
@@ -242,29 +306,21 @@ const InstituteHomePage = () => {
     } catch (error) {
       console.error("Error fetching institute data:", error);
       if (!error.message.includes("No school found")) {
-        alert("Failed to load data. Using demo data instead.");
+        showNotification(
+          "Failed to load data. Using demo data instead.",
+          "warning"
+        );
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const RupeeSign = (props) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      {...props}
-    >
-      <path d="M6 3h12v2H8v2h8c1.1 0 2 .9 2 2s-.9 2-2 2H8v2h6c1.1 0 2 .9 2 2s-.9 2-2 2H6v-2h4v-2H6c-1.1 0-2-.9-2-2s.9-2 2-2h4V7H6V3z" />
-    </svg>
-  );
-
   const quickStats = [
     {
       label: "Total Raised",
       value: `₹${currentInstitution?.totalRaised?.toLocaleString() || "0"}`,
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "text-gray-900",
     },
     {
@@ -286,10 +342,6 @@ const InstituteHomePage = () => {
       color: "text-gray-900",
     },
   ];
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-  };
 
   const parallaxOffset = (strength = 0.5) => ({
     transform: `translate(${
@@ -395,11 +447,14 @@ const InstituteHomePage = () => {
         image: "",
       });
 
-      alert("Funding need created successfully!");
+      showNotification("Funding need created successfully!", "success");
     } catch (error) {
       console.error("Error creating funding need:", error);
       const errorMessage = error.response?.data?.error || error.message;
-      alert(`Failed to create funding need: ${errorMessage}`);
+      showNotification(
+        `Failed to create funding need: ${errorMessage}`,
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -413,7 +468,7 @@ const InstituteHomePage = () => {
       category: need.category,
       goalAmount: need.goalAmount.toString(),
       urgency: need.urgency,
-      image: "", // Always set to empty string
+      image: "",
     });
     setShowEditNeedModal(true);
   };
@@ -485,11 +540,14 @@ const InstituteHomePage = () => {
         image: "",
       });
 
-      alert("Funding need updated successfully!");
+      showNotification("Funding need updated successfully!", "success");
     } catch (error) {
       console.error("Error updating funding need:", error);
       const errorMessage = error.response?.data?.error || error.message;
-      alert(`Failed to update funding need: ${errorMessage}`);
+      showNotification(
+        `Failed to update funding need: ${errorMessage}`,
+        "error"
+      );
     } finally {
       setIsEditing(false);
     }
@@ -552,11 +610,11 @@ const InstituteHomePage = () => {
       setShowDeleteModal(false);
       setDeletingNeed(null);
 
-      alert("Funding need deleted successfully!");
+      showNotification("Funding need deleted successfully!");
     } catch (error) {
       console.error("Error deleting funding need:", error);
       const errorMessage = error.response?.data?.error || error.message;
-      alert(`Failed to delete funding need: ${errorMessage}`);
+      showNotification(`Failed to delete funding need: ${errorMessage}`);
     } finally {
       setIsDeleting(false);
     }
@@ -1063,11 +1121,11 @@ const InstituteHomePage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
-                <textarea
-                  className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent h-24 lg:h-32"
-                  value={currentInstitution?.description}
-                  readOnly
-                />
+                <div className="w-full bg-gray-100 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-3 border border-gray-200 min-h-24 lg:min-h-32">
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {currentInstitution?.description}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -1595,6 +1653,13 @@ const InstituteHomePage = () => {
           </div>
         </div>
       )}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification({ ...notification, show: false })}
+        />
+      )}
 
       <style jsx>{`
         @keyframes float {
@@ -1624,6 +1689,31 @@ const InstituteHomePage = () => {
           -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes progress {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+        .animate-progress {
+          animation: progress 4s linear forwards;
         }
       `}</style>
     </div>

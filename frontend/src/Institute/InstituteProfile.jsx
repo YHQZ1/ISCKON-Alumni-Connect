@@ -578,7 +578,7 @@ const InstituteProfile = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 cursor-pointer">
                   Institution Logo
                 </label>
                 <div className="relative">
@@ -589,7 +589,7 @@ const InstituteProfile = () => {
                     accept="image/jpeg,image/png"
                     onChange={handleFileChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
+                    className={`w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 cursor-pointer focus:ring-gray-500/50 focus:border-gray-500/30 text-sm sm:text-base ${
                       errors.logo
                         ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/30"
                         : "border-gray-300"

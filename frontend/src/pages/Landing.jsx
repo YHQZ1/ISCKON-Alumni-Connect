@@ -56,7 +56,10 @@ const Landing = () => {
                 }${school.state || ""}`.trim() || "Location not specified",
               image: school.logo_url || getDefaultImage(index),
               needs: getRandomNeeds(),
-              alumni: getRandomAlumniCount(),
+              alumni:
+                school.alumni_count && school.alumni_count > 0
+                  ? school.alumni_count
+                  : 0,
             })
           );
 
@@ -86,7 +89,6 @@ const Landing = () => {
   };
 
   const getRandomNeeds = () => Math.floor(Math.random() * 5) + 1;
-  const getRandomAlumniCount = () => Math.floor(Math.random() * 1000) + 100;
 
   const getFallbackInstitutions = () => [
     {
@@ -642,9 +644,11 @@ const Landing = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-gray-600">
-                      <Users className="h-3 w-3 mr-1 text-gray-500" />
-                      <span className="text-sm font-medium">
-                        {institution.alumni} alumni
+                      <Users className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="font-medium">
+                        {institution.alumni > 0
+                          ? `${institution.alumni} alumni`
+                          : "No alumni registered yet"}
                       </span>
                     </div>
                     <button
@@ -692,7 +696,9 @@ const Landing = () => {
                           <div className="flex items-center text-gray-600">
                             <Users className="h-4 w-4 mr-2 text-gray-500" />
                             <span className="font-medium">
-                              {institution.alumni} alumni
+                              {institution.alumni > 0
+                                ? `${institution.alumni} alumni`
+                                : "No alumni registered yet"}
                             </span>
                           </div>
                           <button

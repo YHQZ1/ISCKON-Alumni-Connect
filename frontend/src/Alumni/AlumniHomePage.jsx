@@ -568,7 +568,7 @@ const AlumniHomePage = () => {
                 : "translate-y-10 opacity-0"
             }`}
           >
-            <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
+            <div className="flex flex-col lg:flex-row items-stretch justify-between gap-8">
               <div className="flex-1 w-full">
                 {/* Welcome Badge */}
                 <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 border border-gray-300 shadow-sm mb-4">
@@ -591,13 +591,13 @@ const AlumniHomePage = () => {
                 </p>
 
                 {/* Quick Stats - Grid Layout for Mobile */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="flex gap-3 mb-6 overflow-x-auto">
                   {quickStats.map((stat, index) => {
                     const IconComponent = stat.icon;
                     return (
                       <div
                         key={index}
-                        className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200 shadow-sm"
+                        className="flex-shrink-0 w-36 bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200 shadow-sm"
                       >
                         <IconComponent
                           className={`h-5 w-5 ${stat.color} mb-1`}
@@ -615,14 +615,14 @@ const AlumniHomePage = () => {
               </div>
 
               {/* Recent Activities - Stack below on mobile */}
-              <div className="w-full lg:w-96">
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm">
+              <div className="w-full lg:w-96 flex flex-col">
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm flex-1 flex flex-col">
                   <h3 className="text-base font-semibold text-gray-800 mb-3">
                     Recent Activity
                   </h3>
-                  <div className="space-y-3">
+                  <div className="flex-1 space-y-3 overflow-y-auto">
                     {activitiesLoading ? (
-                      [1, 2].map((index) => (
+                      [1, 2, 3, 4].map((index) => (
                         <div
                           key={index}
                           className="flex items-center space-x-3 p-2 rounded-xl bg-gray-100"
@@ -635,20 +635,9 @@ const AlumniHomePage = () => {
                         </div>
                       ))
                     ) : recentActivities.length === 0 ? (
-                      <div className="text-center py-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <Bell className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500 text-xs">
-                          No recent activity yet
-                        </p>
-                        <button
-                          onClick={() => navigate("/alumni/institutions")}
-                          className="text-gray-700 hover:text-gray-900 text-xs font-medium mt-1"
-                        >
-                          Explore institutions →
-                        </button>
-                      </div>
+                      <p className="text-gray-500 text-center text-sm py-3">
+                        No recent activity
+                      </p>
                     ) : (
                       recentActivities.slice(0, 2).map((activity, index) => {
                         const IconComponent = activity.icon;
@@ -679,6 +668,7 @@ const AlumniHomePage = () => {
                       })
                     )}
                   </div>
+
                   <button
                     onClick={() => navigate("/alumni/activity")}
                     className="w-full mt-3 text-center text-gray-700 hover:text-gray-900 font-semibold text-xs transition-colors duration-300"
