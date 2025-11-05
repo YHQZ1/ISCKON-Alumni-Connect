@@ -24,6 +24,8 @@ app.use(cors());
 app.use(express.json());
 app.use(fileUpload());
 
+
+app.use("/api/payments", paymentRoutes);
 // Public auth routes
 app.use("/api/auth", authRoutes);
 
@@ -31,7 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/donations", donationRoutes);
 
-app.use("/api/payments", authenticateToken, paymentRoutes);
+// app.use("/api/payments", authenticateToken, paymentRoutes);
 
 // Chat routes
 app.use("/api", chatRoutes); // This will make the route /api/chat

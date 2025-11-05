@@ -123,12 +123,13 @@ export const createPaymentOrder = async (req, res) => {
 export const paymentWebhook = async (req, res) => {
   try {
     console.log("=== CASHFREE WEBHOOK RECEIVED ===");
+    console.log("Webhook headers:", req.headers);
 
-    const rawBody = req.body.toString();
-    const webhookData = JSON.parse(rawBody);
+    // The body is already parsed by Express.json() middleware
+    const webhookData = req.body;
 
-    console.log("Webhook type:", webhookData.type);
     console.log("Webhook data:", JSON.stringify(webhookData, null, 2));
+    console.log("Webhook type:", webhookData.type);
 
     // Handle payment success webhook
     if (
@@ -152,11 +153,30 @@ export const paymentWebhook = async (req, res) => {
 
       // Only process successful payments
       if (paymentStatus === "SUCCESS" && orderId) {
+        // ✅ FIRST look up the order to get campaign_id
+        const { data: paymentOrder, error: orderError } = await supabase
+          .from("payment_orders")
+          .select("campaign_id, user_id")
+          .eq("order_id", orderId)
+          .single();
+
+        if (orderError || !paymentOrder) {
+          console.error("❌ Payment order not found for orderId:", orderId);
+          return res.status(200).json({
+            received: true,
+            error: "Order not found",
+          });
+        }
+
+        console.log("✅ Found payment order:", paymentOrder);
+
         await handleSuccessfulPayment({
           orderId,
           orderAmount,
           transactionId,
           paymentMethod,
+          campaignId: paymentOrder.campaign_id, // ✅ Now we have campaign_id!
+          userId: paymentOrder.user_id, // ✅ And user_id!
         });
       }
     }
@@ -178,10 +198,18 @@ export const paymentWebhook = async (req, res) => {
 
 // Handle successful payment
 const handleSuccessfulPayment = async (paymentData) => {
-  const { orderId, orderAmount, transactionId, paymentMethod } = paymentData;
+  const {
+    orderId,
+    orderAmount,
+    transactionId,
+    paymentMethod,
+    campaignId,
+    userId,
+  } = paymentData;
 
   try {
     console.log("✅ Processing successful payment for order:", orderId);
+    console.log("📋 Payment data:", { campaignId, userId });
 
     // 1. Get the payment order details
     const { data: paymentOrder, error: orderError } = await supabase
@@ -191,7 +219,7 @@ const handleSuccessfulPayment = async (paymentData) => {
       .single();
 
     if (orderError || !paymentOrder) {
-      console.error("Payment order not found:", orderId);
+      console.error("❌ Payment order not found:", orderId);
       throw new Error("Payment order not found");
     }
 
@@ -201,15 +229,28 @@ const handleSuccessfulPayment = async (paymentData) => {
       return;
     }
 
-    // 3. Create donation record
+    // 3. Get user details for donation record
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("first_name, last_name, email")
+      .eq("id", userId)
+      .single();
+
+    if (userError) {
+      console.error("❌ Error fetching user:", userError);
+    }
+
+    // 4. Create donation record
     const { data: donation, error: donationError } = await supabase
       .from("donations")
       .insert([
         {
-          campaign_id: paymentOrder.campaign_id,
-          donor_user_id: paymentOrder.user_id,
-          donor_name: "", // Will be populated from users table in query
-          donor_email: "", // Will be populated from users table in query
+          campaign_id: campaignId,
+          donor_user_id: userId,
+          donor_name: user
+            ? `${user.first_name} ${user.last_name}`.trim()
+            : "Donor",
+          donor_email: user?.email || "",
           amount: parseFloat(orderAmount),
           currency: "INR",
           payment_provider: "cashfree",
@@ -221,11 +262,71 @@ const handleSuccessfulPayment = async (paymentData) => {
       .single();
 
     if (donationError) {
-      console.error("Error creating donation record:", donationError);
+      console.error("❌ Error creating donation record:", donationError);
       throw donationError;
     }
 
-    // 4. Update payment_orders with donation_id and success status
+    console.log("✅ Donation created:", donation.id);
+
+    // 🚨 ADD CAMPAIGN UPDATE DEBUG HERE 🚨
+    console.log("🔄 Step 5: Updating campaign amount...");
+    console.log("💰 Campaign ID to update:", campaignId);
+    console.log("💰 Order amount to add:", orderAmount);
+
+    // 5. Update campaign current_amount
+    const { data: campaign, error: campaignError } = await supabase
+      .from("campaigns")
+      .select("current_amount, currency")
+      .eq("id", campaignId)
+      .single();
+
+    console.log("📊 Campaign before update:", {
+      campaign,
+      campaignError,
+      current_amount: campaign?.current_amount,
+      currency: campaign?.currency,
+    });
+
+    if (!campaignError && campaign) {
+      const currentAmount = parseFloat(campaign.current_amount) || 0;
+      const donationAmount = parseFloat(orderAmount);
+      const newAmount = currentAmount + donationAmount;
+
+      console.log("🧮 Amount calculation:", {
+        currentAmount,
+        donationAmount,
+        newAmount,
+      });
+
+      const { error: updateCampaignError } = await supabase
+        .from("campaigns")
+        .update({
+          current_amount: newAmount.toString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", campaignId);
+
+      console.log("✅ Campaign update result:", {
+        success: !updateCampaignError,
+        error: updateCampaignError,
+        rowsUpdated: updateCampaignError ? 0 : 1,
+      });
+
+      if (updateCampaignError) {
+        console.error(
+          "❌ Failed to update campaign amount:",
+          updateCampaignError
+        );
+      } else {
+        console.log(
+          `🎉 Successfully updated campaign ${campaignId} amount from ${currentAmount} to ${newAmount}`
+        );
+      }
+    } else {
+      console.error("❌ Could not fetch campaign for update:", campaignError);
+    }
+
+    // 6. Update payment_orders with donation_id and success status
     const { error: updateError } = await supabase
       .from("payment_orders")
       .update({
@@ -238,37 +339,13 @@ const handleSuccessfulPayment = async (paymentData) => {
       .eq("order_id", orderId);
 
     if (updateError) {
-      console.error("Error updating payment order:", updateError);
+      console.error("❌ Error updating payment order:", updateError);
       throw updateError;
-    }
-
-    // 5. Update campaign current_amount
-    const { data: campaign, error: campaignError } = await supabase
-      .from("campaigns")
-      .select("current_amount")
-      .eq("id", paymentOrder.campaign_id)
-      .single();
-
-    if (!campaignError) {
-      const newAmount =
-        (parseFloat(campaign.current_amount) || 0) + parseFloat(orderAmount);
-
-      await supabase
-        .from("campaigns")
-        .update({
-          current_amount: newAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", paymentOrder.campaign_id);
-
-      console.log(
-        `💰 Updated campaign ${paymentOrder.campaign_id} amount to: ${newAmount}`
-      );
     }
 
     console.log("🎉 Payment processed successfully! Donation ID:", donation.id);
   } catch (error) {
-    console.error("Error handling successful payment:", error);
+    console.error("❌ Error handling successful payment:", error);
     throw error;
   }
 };
@@ -280,28 +357,28 @@ export const getPaymentStatus = async (req, res) => {
 
     // First check our database
     const { data: paymentOrder, error: dbError } = await supabase
-      .from('payment_orders')
-      .select('*')
-      .eq('order_id', orderId)
+      .from("payment_orders")
+      .select("*")
+      .eq("order_id", orderId)
       .single();
 
     if (dbError || !paymentOrder) {
-      return res.status(404).json({ 
-        error: 'Payment order not found' 
+      return res.status(404).json({
+        error: "Payment order not found",
       });
     }
 
     // If payment is already successful in our database, return it
-    if (paymentOrder.payment_status === 'success') {
+    if (paymentOrder.payment_status === "success") {
       return res.json({
         order: {
           order_id: paymentOrder.order_id,
-          order_amount: paymentOrder.amount
+          order_amount: paymentOrder.amount,
         },
         latestPayment: {
-          payment_status: 'SUCCESS',
-          cf_payment_id: paymentOrder.transaction_id
-        }
+          payment_status: "SUCCESS",
+          cf_payment_id: paymentOrder.transaction_id,
+        },
       });
     }
 
@@ -319,36 +396,36 @@ export const getPaymentStatus = async (req, res) => {
       );
 
       const payments = response.data;
-      const latestPayment = payments && payments.length > 0 ? payments[0] : null;
+      const latestPayment =
+        payments && payments.length > 0 ? payments[0] : null;
 
       res.json({
         order: {
           order_id: orderId,
-          order_amount: paymentOrder.amount
+          order_amount: paymentOrder.amount,
         },
         payments: payments,
-        latestPayment: latestPayment
+        latestPayment: latestPayment,
       });
-
     } catch (cashfreeError) {
       // If CashFree API fails, return our database status
-      console.error('CashFree API error:', cashfreeError.response?.data);
+      console.error("CashFree API error:", cashfreeError.response?.data);
       res.json({
         order: {
           order_id: orderId,
-          order_amount: paymentOrder.amount
+          order_amount: paymentOrder.amount,
         },
         latestPayment: {
-          payment_status: paymentOrder.payment_status.toUpperCase() || 'PENDING'
-        }
+          payment_status:
+            paymentOrder.payment_status.toUpperCase() || "PENDING",
+        },
       });
     }
-
   } catch (error) {
-    console.error('Get payment status error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get payment status',
-      details: error.message
+    console.error("Get payment status error:", error);
+    res.status(500).json({
+      error: "Failed to get payment status",
+      details: error.message,
     });
   }
 };

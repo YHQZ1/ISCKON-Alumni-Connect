@@ -1,8 +1,9 @@
+// paymentRoutes.js - Add authentication to specific routes
 import express from 'express';
 import { 
   createPaymentOrder, 
   paymentWebhook, 
-  getPaymentStatus  // ADD THIS IMPORT
+  getPaymentStatus
 } from '../controllers/paymentController.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 
@@ -12,9 +13,9 @@ const router = express.Router();
 router.post('/create-order', authenticateToken, createPaymentOrder);
 
 // Get payment status - public route (needed for callback)
-router.get('/status/:orderId', getPaymentStatus); // ADD THIS LINE
+router.get('/status/:orderId', getPaymentStatus);
 
-// Webhook endpoint - no authentication (called by CashFree)
+// Webhook endpoint - NO authentication (called by CashFree)
 router.post('/webhook', paymentWebhook);
 
 export default router;

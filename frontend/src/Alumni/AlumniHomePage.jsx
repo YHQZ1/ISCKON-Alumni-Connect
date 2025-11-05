@@ -24,6 +24,7 @@ import {
   IndianRupee,
   Menu,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -69,6 +70,42 @@ const AlumniHomePage = () => {
     return () => window.removeEventListener("mousemove", updateMousePosition);
   }, []);
 
+  // Add this useEffect to sync donation stats with user data
+  useEffect(() => {
+    if (donationStats.totalDonated > 0) {
+      setCurrentUser((prev) => ({
+        ...prev,
+        totalDonated: donationStats.totalDonated,
+        projectsSupported: donationStats.projectsSupported,
+      }));
+    }
+  }, [donationStats]); // This runs when donationStats updates
+
+  // Add this useEffect to refresh data when page gains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // User returned to the page - refresh data
+        console.log("Page visible - refreshing data...");
+        refreshData();
+      }
+    };
+
+    const handleFocus = () => {
+      // Page gained focus - refresh data
+      console.log("Page focused - refreshing data...");
+      refreshData();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -92,10 +129,35 @@ const AlumniHomePage = () => {
   }, []);
 
   useEffect(() => {
-    fetchUserData();
-    fetchFeaturedInstitutions();
-    fetchDonationStats();
+    const initializeData = async () => {
+      try {
+        setIsLoading(true);
+        await fetchUserData(); // First - get basic user info
+        await fetchDonationStats(); // Second - get donation amounts
+        await fetchFeaturedInstitutions(); // Third - institutions
+        await fetchRecentActivities(); // Fourth - activities
+      } catch (error) {
+        console.error("Error initializing data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
+
+  // Add this function to refresh all data
+  const refreshData = async () => {
+    try {
+      console.log("Refreshing dashboard data...");
+      await fetchDonationStats();
+      await fetchRecentActivities();
+      await fetchFeaturedInstitutions(); // This will update campaign amounts
+      console.log("Dashboard data refreshed successfully");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -107,21 +169,21 @@ const AlumniHomePage = () => {
       });
 
       const userData = response.data.user;
+
+      // Don't use donationStats here - it's not updated yet
+      // Just set the basic user info
       setCurrentUser({
         name: `${userData.first_name} ${userData.last_name}`,
         batch: userData.graduation_year
           ? `Class of ${userData.graduation_year}`
           : "Alumni",
         school: userData.institution_name || "Your School",
-        totalDonated: donationStats.totalDonated, // USE REAL DATA
-        projectsSupported: donationStats.projectsSupported, // USE REAL DATA
+        totalDonated: 0, // Will be updated by donationStats
+        projectsSupported: 0, // Will be updated by donationStats
         avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
       });
-
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching user data:", error);
-      setIsLoading(false);
     }
   };
 
@@ -141,15 +203,60 @@ const AlumniHomePage = () => {
         }),
       ]);
 
+      // 🚨 ADD DEBUG LOGS HERE 🚨
+      console.log("=== DEBUG DATA ===");
+      console.log("🏫 Schools data:", schoolsResponse.data.schools);
+      console.log("🎯 Campaigns data:", campaignsResponse.data.campaigns);
+
+      // Check the structure of first campaign
+      if (
+        campaignsResponse.data.campaigns &&
+        campaignsResponse.data.campaigns.length > 0
+      ) {
+        console.log(
+          "📋 First campaign structure:",
+          campaignsResponse.data.campaigns[0]
+        );
+        console.log(
+          "🔍 Campaign school_id:",
+          campaignsResponse.data.campaigns[0].school_id
+        );
+        console.log(
+          "🔍 Campaign school data:",
+          campaignsResponse.data.campaigns[0].schools
+        );
+      }
+
+      // Check first school
+      if (
+        schoolsResponse.data.schools &&
+        schoolsResponse.data.schools.length > 0
+      ) {
+        console.log(
+          "📋 First school structure:",
+          schoolsResponse.data.schools[0]
+        );
+      }
+      console.log("=== END DEBUG ===");
+
       const schools = schoolsResponse.data.schools;
       const campaigns = campaignsResponse.data.campaigns;
 
+      // Create school lookup map first
+      const schoolMap = {};
+      schools.forEach((school) => {
+        schoolMap[school.id] = school;
+      });
+
+      // Group campaigns by school_id
       const campaignsBySchool = {};
       campaigns.forEach((campaign) => {
-        if (!campaignsBySchool[campaign.school_id]) {
-          campaignsBySchool[campaign.school_id] = [];
+        if (campaign.school_id) {
+          if (!campaignsBySchool[campaign.school_id]) {
+            campaignsBySchool[campaign.school_id] = [];
+          }
+          campaignsBySchool[campaign.school_id].push(campaign);
         }
-        campaignsBySchool[campaign.school_id].push(campaign);
       });
 
       const transformedInstitutions = schools.map((school, index) => {
@@ -166,6 +273,20 @@ const AlumniHomePage = () => {
           (sum, camp) => sum + (camp.current_amount || 0),
           0
         );
+
+        console.log(`🏫 School: ${school.name}`, {
+          schoolId: school.id,
+          campaignsCount: schoolCampaigns.length,
+          activeCampaignsCount: activeCampaigns.length,
+          totalNeeded,
+          totalRaised,
+          campaigns: activeCampaigns.map((camp) => ({
+            title: camp.title,
+            current_amount: camp.current_amount,
+            target_amount: camp.target_amount,
+            status: camp.status,
+          })),
+        });
 
         const urgentCampaign = activeCampaigns.sort(
           (a, b) =>
@@ -202,6 +323,7 @@ const AlumniHomePage = () => {
       });
 
       setFeaturedInstitutions(transformedInstitutions);
+      console.log("🎯 FINAL TRANSFORMED INSTITUTIONS:", transformedInstitutions);
       setInstitutionsLoading(false);
     } catch (error) {
       console.error("Error fetching featured institutions:", error);
@@ -256,7 +378,7 @@ const AlumniHomePage = () => {
       const activities = response.data.donations.map((donation) => ({
         id: donation.id,
         type: "donation",
-        school: donation.campaigns?.schools?.name || "School",
+        school: donation.campaigns?.schools?.name || "School", // Keep this but also add fallback
         amount: donation.amount,
         project: donation.campaigns?.title || "Campaign",
         date: formatTimeAgo(donation.created_at),

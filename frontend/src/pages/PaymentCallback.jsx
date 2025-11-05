@@ -39,6 +39,7 @@ const PaymentCallback = () => {
 
       const paymentData = response.data;
       
+      
       if (paymentData.latestPayment?.payment_status === "SUCCESS") {
         setPaymentStatus("success");
         setOrderDetails({
@@ -59,6 +60,12 @@ const PaymentCallback = () => {
       setError("Failed to verify payment status");
     }
   };
+  useEffect(() => {
+    if (paymentStatus === "success") {
+      localStorage.setItem("payment_success", Date.now().toString());
+    }
+  }, [paymentStatus]);
+  
 
   const handleRetry = () => {
     navigate("/alumni/home");

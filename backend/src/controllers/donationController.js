@@ -178,24 +178,31 @@ export const getMyDonationStats = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get all successful donations for this user
+    console.log("🔍 Fetching donation stats for user:", userId);
+
+    // Get all successful donations for this user - try different status values
     const { data: donations, error } = await supabase
       .from("donations")
       .select(
         `
         amount,
         campaign_id,
+        status,
+        donor_user_id,
         campaigns (
           school_id
         )
       `
       )
       .eq("donor_user_id", userId)
-      .eq("status", "completed");
+      .in("status", ["completed", "success", "succeeded"]); // Try multiple status values
 
     if (error) {
+      console.error("Database error:", error);
       throw error;
     }
+
+    console.log("📊 Found donations:", donations);
 
     // Calculate stats
     const totalDonated = donations.reduce(
@@ -212,6 +219,13 @@ export const getMyDonationStats = async (req, res) => {
       ...new Set(donations.map((d) => d.campaigns?.school_id).filter(Boolean)),
     ];
     const schoolsHelped = uniqueSchools.length;
+
+    console.log("📈 Final stats:", {
+      totalDonated,
+      projectsSupported,
+      schoolsHelped,
+      totalDonations: donations.length,
+    });
 
     res.json({
       totalDonated,
