@@ -17,8 +17,6 @@ import errorHandler from "./src/middleware/errorMiddleware.js";
 import campaignRoutes from "./src/routes/campaignRoutes.js";
 import donationRoutes from "./src/routes/donationRoutes.js";
 
-import paymentRoutes from "./src/routes/paymentRoutes.js";
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -39,8 +37,6 @@ app.use("/api/users", authenticateToken, userRoutes);
 
 // School routes
 app.use("/api/schools", schoolRoutes);
-
-app.use("/api/payments", paymentRoutes);
 
 // Health
 app.get("/", (_req, res) => res.send("Backend live"));

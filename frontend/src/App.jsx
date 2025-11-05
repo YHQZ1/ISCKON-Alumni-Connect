@@ -7,7 +7,7 @@ import InstituteHomePage from "./Institute/InstituteHomePage";
 import AlumniProfile from "./Alumni/AlumniProfile";
 import InstituteProfile from "./Institute/InstituteProfile";
 import InstituteDetails from "./Alumni/InstituteDetails";
-import VoiceNugget from "./components/VoiceNugget"; // Import the VoiceChat component
+import VoiceNugget from "./components/VoiceNugget";
 
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";

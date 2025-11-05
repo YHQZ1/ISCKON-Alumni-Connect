@@ -2,7 +2,7 @@
   "quick_donation": {
     "keywords": ["donate", "donation", "give now", "contribute", "fund"],
     "snippet": "Make a one-time donation to a listed school or campaign. Select amount and pay via UPI, net banking, or card.",
-    "action": { "type": "navigate", "label": "Donate", "url": "/donate" }
+    "action": { "type": "navigate", "label": "Donate", "url": "/alumni/institute-details" }
   },
   "campaigns": {
     "keywords": ["campaigns", "projects", "fundraisers", "school campaigns", "active campaigns", "ongoing campaigns"],
