@@ -172,3 +172,138 @@ export async function webhookHandler(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+// Get user's donation statistics
+export const getMyDonationStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get all successful donations for this user
+    const { data: donations, error } = await supabase
+      .from("donations")
+      .select(
+        `
+        amount,
+        campaign_id,
+        campaigns (
+          school_id
+        )
+      `
+      )
+      .eq("donor_user_id", userId)
+      .eq("status", "completed");
+
+    if (error) {
+      throw error;
+    }
+
+    // Calculate stats
+    const totalDonated = donations.reduce(
+      (sum, donation) => sum + parseFloat(donation.amount),
+      0
+    );
+
+    // Get unique campaigns supported
+    const uniqueCampaigns = [...new Set(donations.map((d) => d.campaign_id))];
+    const projectsSupported = uniqueCampaigns.length;
+
+    // Get unique schools helped
+    const uniqueSchools = [
+      ...new Set(donations.map((d) => d.campaigns?.school_id).filter(Boolean)),
+    ];
+    const schoolsHelped = uniqueSchools.length;
+
+    res.json({
+      totalDonated,
+      projectsSupported,
+      schoolsHelped,
+      totalDonations: donations.length,
+    });
+  } catch (error) {
+    console.error("Error fetching donation stats:", error);
+    res.status(500).json({
+      error: "Failed to fetch donation statistics",
+    });
+  }
+};
+
+// Get user's recent donations
+export const getMyRecentDonations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: donations, error } = await supabase
+      .from("donations")
+      .select(
+        `
+        id,
+        amount,
+        created_at,
+        campaigns (
+          title,
+          schools (
+            name
+          )
+        )
+      `
+      )
+      .eq("donor_user_id", userId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      donations: donations || [],
+    });
+  } catch (error) {
+    console.error("Error fetching recent donations:", error);
+    res.status(500).json({
+      error: "Failed to fetch recent donations",
+    });
+  }
+};
+
+// Get all donations for a specific campaign (for institute dashboard)
+export const getCampaignDonations = async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+
+    const { data: donations, error } = await supabase
+      .from("donations")
+      .select(
+        `
+        id,
+        amount,
+        created_at,
+        donor_name,
+        donor_email,
+        status,
+        donor_user_id,
+        users (
+          first_name,
+          last_name
+        )
+      `
+      )
+      .eq("campaign_id", campaignId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      donations: donations || [],
+    });
+  } catch (error) {
+    console.error("Error fetching campaign donations:", error);
+    res.status(500).json({
+      error: "Failed to fetch campaign donations",
+    });
+  }
+};

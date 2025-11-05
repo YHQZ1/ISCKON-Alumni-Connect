@@ -17,6 +17,8 @@ import errorHandler from "./src/middleware/errorMiddleware.js";
 import campaignRoutes from "./src/routes/campaignRoutes.js";
 import donationRoutes from "./src/routes/donationRoutes.js";
 
+import paymentRoutes from "./src/routes/paymentRoutes.js";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -28,6 +30,8 @@ app.use("/api/auth", authRoutes);
 // public & protected routing
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/donations", donationRoutes);
+
+app.use("/api/payments", authenticateToken, paymentRoutes);
 
 // Chat routes
 app.use("/api", chatRoutes); // This will make the route /api/chat

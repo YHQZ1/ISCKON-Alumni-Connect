@@ -55,6 +55,11 @@ const AlumniHomePage = () => {
   const [featuredInstitutions, setFeaturedInstitutions] = useState([]);
   const [institutionsLoading, setInstitutionsLoading] = useState(true);
   const [institutionsError, setInstitutionsError] = useState(null);
+  const [donationStats, setDonationStats] = useState({
+    totalDonated: 0,
+    projectsSupported: 0,
+    schoolsHelped: 0,
+  });
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -89,6 +94,7 @@ const AlumniHomePage = () => {
   useEffect(() => {
     fetchUserData();
     fetchFeaturedInstitutions();
+    fetchDonationStats();
   }, []);
 
   const fetchUserData = async () => {
@@ -107,8 +113,8 @@ const AlumniHomePage = () => {
           ? `Class of ${userData.graduation_year}`
           : "Alumni",
         school: userData.institution_name || "Your School",
-        totalDonated: 0,
-        projectsSupported: 0,
+        totalDonated: donationStats.totalDonated, // USE REAL DATA
+        projectsSupported: donationStats.projectsSupported, // USE REAL DATA
         avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
       });
 
@@ -206,67 +212,57 @@ const AlumniHomePage = () => {
     }
   };
 
+  const fetchDonationStats = async () => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+
+      const response = await axios.get(`${BASE_URL}/api/donations/my-stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data) {
+        setDonationStats({
+          totalDonated: response.data.totalDonated || 0,
+          projectsSupported: response.data.projectsSupported || 0,
+          schoolsHelped: response.data.schoolsHelped || 0,
+        });
+
+        // Also update currentUser with real data
+        setCurrentUser((prev) => ({
+          ...prev,
+          totalDonated: response.data.totalDonated || 0,
+          projectsSupported: response.data.projectsSupported || 0,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching donation stats:", error);
+    }
+  };
+
   const fetchRecentActivities = async () => {
     try {
       setActivitiesLoading(true);
       const token = localStorage.getItem("jwtToken");
 
-      const response = await axios.get(
-        `${BASE_URL}/api/users/recent-activities`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const activities = response.data.activities.map((activity) => {
-        let transformedActivity = {
-          id: activity.id,
-          type: activity.type,
-          school: activity.school_name,
-          date: formatTimeAgo(activity.created_at),
-          created_at: activity.created_at,
-        };
-
-        switch (activity.type) {
-          case "donation":
-            transformedActivity = {
-              ...transformedActivity,
-              amount: activity.amount,
-              project: activity.campaign_title,
-              icon: Heart,
-            };
-            break;
-          case "milestone":
-            transformedActivity = {
-              ...transformedActivity,
-              project: activity.campaign_title,
-              milestone: activity.milestone,
-              icon: Target,
-            };
-            break;
-          case "update":
-            transformedActivity = {
-              ...transformedActivity,
-              update: activity.update_text,
-              icon: TrendingUp,
-            };
-            break;
-          case "campaign_created":
-            transformedActivity = {
-              ...transformedActivity,
-              project: activity.campaign_title,
-              action: "New campaign created",
-              icon: Award,
-            };
-            break;
-          default:
-            transformedActivity.icon = Bell;
-        }
-
-        return transformedActivity;
+      // Fetch recent donations
+      const response = await axios.get(`${BASE_URL}/api/donations/my-recent`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+
+      const activities = response.data.donations.map((donation) => ({
+        id: donation.id,
+        type: "donation",
+        school: donation.campaigns?.schools?.name || "School",
+        amount: donation.amount,
+        project: donation.campaigns?.title || "Campaign",
+        date: formatTimeAgo(donation.created_at),
+        created_at: donation.created_at,
+        icon: Heart,
+      }));
 
       setRecentActivities(activities);
       setActivitiesLoading(false);
@@ -337,28 +333,35 @@ const AlumniHomePage = () => {
     return `${daysAgo} days ago`;
   };
 
+  const calculateImpactScore = (totalDonated) => {
+    if (totalDonated >= 10000) return "High";
+    if (totalDonated >= 5000) return "Medium";
+    if (totalDonated >= 1000) return "Low";
+    return "Beginner";
+  };
+
   const quickStats = [
     {
       label: "Total Donated",
-      value: `${currentUser.totalDonated.toLocaleString()}`,
+      value: `₹${donationStats.totalDonated.toLocaleString()}`,
       icon: IndianRupee,
       color: "text-gray-900",
     },
     {
       label: "Projects Supported",
-      value: currentUser.projectsSupported,
+      value: donationStats.projectsSupported,
       icon: Target,
       color: "text-gray-900",
     },
     {
       label: "Schools Helped",
-      value: "0",
+      value: donationStats.schoolsHelped,
       icon: Building,
       color: "text-gray-900",
     },
     {
       label: "Impact Score",
-      value: "None",
+      value: calculateImpactScore(donationStats.totalDonated),
       icon: Award,
       color: "text-gray-900",
     },

@@ -389,7 +389,7 @@ const InstituteHomePage = () => {
           short_description: newNeedData.description,
           body: newNeedData.description,
           target_amount: parseInt(newNeedData.goalAmount),
-          currency: "USD",
+          currency: "INR",
           metadata: {
             category: newNeedData.category,
             urgency: newNeedData.urgency,

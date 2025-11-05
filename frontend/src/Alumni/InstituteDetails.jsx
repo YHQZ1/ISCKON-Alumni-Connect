@@ -19,6 +19,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import axios from "axios";
+import DonationModal from "../components/DonationModal";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -30,6 +31,9 @@ const InstituteDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("campaigns");
+
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   useEffect(() => {
     fetchSchoolData();
@@ -65,8 +69,9 @@ const InstituteDetails = () => {
     }
   };
 
-  const handleDonate = (campaignId) => {
-    navigate(`/donate/${campaignId}`);
+  const handleDonate = (campaign) => {
+    setSelectedCampaign(campaign);
+    setDonationModalOpen(true);
   };
 
   const handleShare = async (campaign) => {
@@ -91,7 +96,8 @@ const InstituteDetails = () => {
   const handleShareSchool = async () => {
     const shareData = {
       title: school.name,
-      text: school.description || `Support ${school.name} through alumni donations`,
+      text:
+        school.description || `Support ${school.name} through alumni donations`,
       url: window.location.href,
     };
 
@@ -262,28 +268,36 @@ const InstituteDetails = () => {
                       <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">
                         {activeCampaigns.length}
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Active Needs</div>
+                      <div className="text-xs sm:text-sm text-gray-600">
+                        Active Needs
+                      </div>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center">
                       <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">
                         ₹{totalRaised.toLocaleString()}
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Total Raised</div>
+                      <div className="text-xs sm:text-sm text-gray-600">
+                        Total Raised
+                      </div>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center">
                       <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">
                         {school.metadata?.alumni_count || "N/A"}
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Alumni</div>
+                      <div className="text-xs sm:text-sm text-gray-600">
+                        Alumni
+                      </div>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center">
                       <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">
                         {completedCampaigns.length}
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-600">Completed</div>
+                      <div className="text-xs sm:text-sm text-gray-600">
+                        Completed
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -300,7 +314,9 @@ const InstituteDetails = () => {
                 {school.contact_person_name && (
                   <div className="flex items-center text-gray-600 text-sm sm:text-base">
                     <UsersRound className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="truncate">{school.contact_person_name}</span>
+                    <span className="truncate">
+                      {school.contact_person_name}
+                    </span>
                   </div>
                 )}
 
@@ -403,7 +419,8 @@ const InstituteDetails = () => {
                       No Active Campaigns
                     </h3>
                     <p className="text-gray-600 text-sm sm:text-base">
-                      This school doesn't have any active funding needs at the moment.
+                      This school doesn't have any active funding needs at the
+                      moment.
                     </p>
                   </div>
                 </div>
@@ -438,8 +455,8 @@ const InstituteDetails = () => {
                           <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                             <span>Progress</span>
                             <span>
-                              ₹{campaign.current_amount?.toLocaleString() || 0} of ₹
-                              {campaign.target_amount?.toLocaleString()}
+                              ₹{campaign.current_amount?.toLocaleString() || 0}{" "}
+                              of ₹{campaign.target_amount?.toLocaleString()}
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
@@ -477,7 +494,8 @@ const InstituteDetails = () => {
                             <div className="flex items-center text-xs sm:text-sm text-gray-600">
                               <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                               <span>
-                                {getDaysRemaining(campaign.end_at)} days remaining
+                                {getDaysRemaining(campaign.end_at)} days
+                                remaining
                               </span>
                             </div>
                           )}
@@ -486,7 +504,7 @@ const InstituteDetails = () => {
                         {/* Action Buttons */}
                         <div className="flex gap-2 sm:gap-3">
                           <button
-                            onClick={() => navigate("#")}
+                            onClick={() => handleDonate(campaign)}
                             className="flex-1 bg-gray-800 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl hover:bg-gray-700 transition-all duration-300 font-semibold text-xs sm:text-sm flex items-center justify-center space-x-1 sm:space-x-2"
                           >
                             <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -549,7 +567,7 @@ const InstituteDetails = () => {
                         <div>
                           <span className="text-xs sm:text-sm font-medium text-gray-500">
                             Location:
-                            </span>
+                          </span>
                           <p className="text-gray-900 text-sm sm:text-base">
                             {[
                               school.street,
@@ -571,16 +589,24 @@ const InstituteDetails = () => {
                       </h3>
                       <div className="space-y-2 sm:space-y-3">
                         <div className="flex justify-between text-sm sm:text-base">
-                          <span className="text-gray-600">Total Campaigns:</span>
-                          <span className="font-semibold">{campaigns.length}</span>
+                          <span className="text-gray-600">
+                            Total Campaigns:
+                          </span>
+                          <span className="font-semibold">
+                            {campaigns.length}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm sm:text-base">
                           <span className="text-gray-600">Funds Raised:</span>
-                          <span className="font-semibold">₹{totalRaised.toLocaleString()}</span>
+                          <span className="font-semibold">
+                            ₹{totalRaised.toLocaleString()}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm sm:text-base">
                           <span className="text-gray-600">Active Needs:</span>
-                          <span className="font-semibold">{activeCampaigns.length}</span>
+                          <span className="font-semibold">
+                            {activeCampaigns.length}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -634,7 +660,8 @@ const InstituteDetails = () => {
                           <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                             <span>Final Amount</span>
                             <span className="font-semibold text-green-600">
-                              ₹{campaign.current_amount?.toLocaleString() || 0} raised
+                              ₹{campaign.current_amount?.toLocaleString() || 0}{" "}
+                              raised
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
@@ -670,6 +697,12 @@ const InstituteDetails = () => {
           )}
         </div>
       </section>
+      <DonationModal
+        isOpen={donationModalOpen}
+        onClose={() => setDonationModalOpen(false)}
+        campaign={selectedCampaign}
+        school={school}
+      />
     </div>
   );
 };

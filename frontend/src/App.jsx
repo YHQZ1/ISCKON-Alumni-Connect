@@ -13,7 +13,8 @@ import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-import "./App.css";
+
+import PaymentCallback from "./pages/PaymentCallback";
 
 // Component to determine user type based on route
 function VoiceNuggetWrapper() {
@@ -39,6 +40,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/signup/:userType" element={<Auth />} />
+          <Route path="/payment-callback" element={<PaymentCallback />} />
 
           {/* Alumni only */}
           <Route
