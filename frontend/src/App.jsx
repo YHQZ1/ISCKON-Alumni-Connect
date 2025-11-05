@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AlumniHomePage from "./Alumni/AlumniHomePage";
@@ -7,6 +7,7 @@ import InstituteHomePage from "./Institute/InstituteHomePage";
 import AlumniProfile from "./Alumni/AlumniProfile";
 import InstituteProfile from "./Institute/InstituteProfile";
 import InstituteDetails from "./Alumni/InstituteDetails";
+import VoiceNugget from "./components/VoiceNugget"; // Import the VoiceChat component
 
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
@@ -14,10 +15,26 @@ import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
+// Component to determine user type based on route
+function VoiceNuggetWrapper() {
+  const location = useLocation();
+  
+  const getCurrentUserType = () => {
+    if (location.pathname.startsWith('/alumni')) return 'alumni';
+    if (location.pathname.startsWith('/institute')) return 'institution';
+    return 'guest'; // for landing page, auth, etc.
+  };
+
+  return <VoiceNugget userType={getCurrentUserType()} />;
+}
+
 function App() {
   return (
     <Router>
       <div className="App">
+        {/* VoiceChat will be available on ALL pages */}
+        <VoiceNuggetWrapper />
+        
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />

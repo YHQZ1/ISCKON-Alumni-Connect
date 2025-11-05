@@ -6,9 +6,10 @@ import express from "express";
 import cors from "cors";
 import fileUpload from "express-fileupload";
 
-import authRoutes from "./src/routes/authRoutes.js"    // signup/login (public)
-import userRoutes from "./src/routes/userRoutes.js";     // protected user actions
-import schoolRoutes from "./src/routes/schoolRoutes.js"; // protected school create, public list/get
+import authRoutes from "./src/routes/authRoutes.js"
+import userRoutes from "./src/routes/userRoutes.js";
+import schoolRoutes from "./src/routes/schoolRoutes.js";
+import chatRoutes from "./src/routes/chatRoutes.js";
 
 import authenticateToken from "./src/middleware/authenticateToken.js";
 import errorHandler from "./src/middleware/errorMiddleware.js";
@@ -24,16 +25,17 @@ app.use(fileUpload());
 // Public auth routes
 app.use("/api/auth", authRoutes);
 
-// public & protected routing (example pattern used in your app)
+// public & protected routing
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/donations", donationRoutes);
+
+// Chat routes
+app.use("/api", chatRoutes); // This will make the route /api/chat
 
 // Protect all user routes with JWT auth
 app.use("/api/users", authenticateToken, userRoutes);
 
-// Choose whether schools listing is public or protected.
-// We'll protect creation but allow public GETs in routes: keep authenticateToken to protect POST only.
-// To keep it simple: protect all school routes; if you want public listing move authenticateToken to router-level.
+// School routes
 app.use("/api/schools", schoolRoutes);
 
 // Health
