@@ -42,6 +42,12 @@ const AlumniHomePage = () => {
   const observerRef = useRef();
   const animationRef = useRef(null);
   const navigate = useNavigate();
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [donationAmount, setDonationAmount] = useState("");
+  const [customAmount, setCustomAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [currentUser, setCurrentUser] = useState({
     name: "",
@@ -374,8 +380,82 @@ const AlumniHomePage = () => {
     navigate("/");
   };
 
-  const handleDonate = (institutionId, campaignId = null) => {
-    console.log("Donate to:", institutionId, "Campaign:", campaignId);
+  const handleDonate = async (institutionId, campaignId = null) => {
+    try {
+      // Find the institution
+      const institution = featuredInstitutions.find(
+        (inst) => inst.id === institutionId
+      );
+      if (!institution) return;
+
+      // If institution has campaigns, let user choose one
+      if (institution.campaigns && institution.campaigns.length > 0) {
+        setSelectedInstitution(institution);
+        setSelectedCampaign(
+          campaignId
+            ? institution.campaigns.find((c) => c.id === campaignId)
+            : null
+        );
+        setDonationModalOpen(true);
+      } else {
+        // No campaigns, proceed with general donation to institution
+        setSelectedInstitution(institution);
+        setSelectedCampaign(null);
+        setDonationModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error preparing donation:", error);
+    }
+  };
+
+  const processDonation = async () => {
+    if ((!donationAmount && !customAmount) || !selectedInstitution) {
+      alert("Please select an amount");
+      return;
+    }
+
+    const amount = customAmount || donationAmount;
+
+    if (amount < 10) {
+      alert("Minimum donation amount is ₹10");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const token = localStorage.getItem("jwtToken");
+
+      const response = await axios.post(
+        `${BASE_URL}/api/payments/orders`,
+        {
+          amount: parseInt(amount),
+          campaign_id: selectedCampaign?.id || null,
+          institution_id: selectedInstitution.id,
+          donor_name: currentUser.name,
+          donor_email: "user@example.com", // You might want to get this from user data
+          donor_phone: "9999999999", // You might want to get this from user data
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.payment_session_id) {
+        // Redirect to Cashfree payment page
+        window.location.href = `https://sandbox.cashfree.com/pg/redirect/${response.data.payment_session_id}`;
+      } else {
+        alert("Payment initialization failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Donation error:", error);
+      alert("Failed to process donation. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleViewSchool = (institutionId) => {
@@ -967,6 +1047,190 @@ const AlumniHomePage = () => {
           -webkit-line-clamp: 2;
         }
       `}</style>
+
+      {/* Donation Modal */}
+      {donationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold">Make a Donation</h3>
+                  <p className="text-gray-200 text-sm mt-1">
+                    Support {selectedInstitution?.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setDonationModalOpen(false);
+                    setSelectedInstitution(null);
+                    setSelectedCampaign(null);
+                    setDonationAmount("");
+                    setCustomAmount("");
+                  }}
+                  className="text-white hover:text-gray-300 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Campaign Selection (if available) */}
+              {selectedInstitution?.campaigns &&
+                selectedInstitution.campaigns.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Campaign (Optional)
+                    </label>
+                    <select
+                      value={selectedCampaign?.id || ""}
+                      onChange={(e) => {
+                        const campaignId = e.target.value;
+                        const campaign = selectedInstitution.campaigns.find(
+                          (c) => c.id === campaignId
+                        );
+                        setSelectedCampaign(campaign || null);
+                      }}
+                      className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                    >
+                      <option value="">General Donation</option>
+                      {selectedInstitution.campaigns.map((campaign) => (
+                        <option key={campaign.id} value={campaign.id}>
+                          {campaign.title} - ₹{campaign.target_amount} goal
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Selected Campaign Info */}
+              {selectedCampaign && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <h4 className="font-semibold text-blue-800">
+                    {selectedCampaign.title}
+                  </h4>
+                  <p className="text-sm text-blue-600 mt-1">
+                    {selectedCampaign.description}
+                  </p>
+                  <div className="flex justify-between text-xs text-blue-700 mt-2">
+                    <span>Raised: ₹{selectedCampaign.current_amount}</span>
+                    <span>Goal: ₹{selectedCampaign.target_amount}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Amount Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select Amount (₹)
+                </label>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => {
+                        setDonationAmount(amount);
+                        setCustomAmount("");
+                      }}
+                      className={`p-3 border-2 rounded-xl font-semibold transition-all duration-200 ${
+                        donationAmount === amount
+                          ? "border-gray-800 bg-gray-800 text-white"
+                          : "border-gray-300 text-gray-700 hover:border-gray-800"
+                      }`}
+                    >
+                      ₹{amount}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Amount */}
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    placeholder="Enter custom amount"
+                    value={customAmount}
+                    onChange={(e) => {
+                      setCustomAmount(e.target.value);
+                      setDonationAmount("");
+                    }}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                    min="10"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Minimum amount: ₹10
+                </p>
+              </div>
+
+              {/* Donation Summary */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h4 className="font-semibold text-gray-800 mb-2">
+                  Donation Summary
+                </h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Institution:</span>
+                    <span className="font-medium">
+                      {selectedInstitution?.name}
+                    </span>
+                  </div>
+                  {selectedCampaign && (
+                    <div className="flex justify-between">
+                      <span>Campaign:</span>
+                      <span className="font-medium">
+                        {selectedCampaign.title}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Amount:</span>
+                    <span className="font-medium text-gray-800">
+                      ₹{customAmount || donationAmount || "0"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDonationModalOpen(false)}
+                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={processDonation}
+                  disabled={isProcessing || (!donationAmount && !customAmount)}
+                  className="flex-1 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    `Donate ₹${customAmount || donationAmount || "0"}`
+                  )}
+                </button>
+              </div>
+
+              {/* Security Note */}
+              <div className="text-center">
+                <p className="text-xs text-gray-500">
+                  🔒 Secure payment powered by Cashfree
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

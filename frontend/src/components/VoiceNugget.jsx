@@ -149,8 +149,12 @@ export default function VoiceNugget({ userType = "alumni" }) {
         document.querySelector('meta[name="description"]')?.content || "";
       const pageContext = `Path: ${window.location.pathname}. Short desc: ${metaDesc}`;
 
+      // FIX: Make sure we're calling /api/chat
+      const url = `${BASE_URL}/api/chat`;
+      console.log("🟡 [Frontend] Making request to:", url);
+
       const response = await axios.post(
-        `${BASE_URL}/chat`,
+        url, // Use the corrected URL
         {
           message: text,
           context: pageContext,
@@ -163,6 +167,8 @@ export default function VoiceNugget({ userType = "alumni" }) {
         }
       );
 
+      console.log("🟢 [Frontend] Response received:", response.data);
+
       const data = response.data;
 
       if (data?.error) {
@@ -173,10 +179,12 @@ export default function VoiceNugget({ userType = "alumni" }) {
         setActions(data?.actions || []);
         speak(data?.reply || "");
       }
-      
+
       setStatus("Idle");
     } catch (error) {
-      console.error("[VoiceNugget] backend error", error);
+      console.error("🔴 [Frontend] Backend error details:", error);
+      console.error("🔴 [Frontend] Error response:", error.response?.data);
+      console.error("🔴 [Frontend] Error status:", error.response?.status);
       setReply("Error contacting server. Please try again.");
       setActions([]);
       setStatus("Idle");
@@ -300,8 +308,8 @@ export default function VoiceNugget({ userType = "alumni" }) {
           onClick={() => setOpen(true)}
           aria-label="Open voice assistant"
           className={`flex items-center justify-center w-16 h-16 rounded-2xl shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl ${
-            listening 
-              ? "animate-pulse bg-gradient-to-br from-red-500 to-red-600" 
+            listening
+              ? "animate-pulse bg-gradient-to-br from-red-500 to-red-600"
               : "bg-gradient-to-br from-gray-800 to-gray-900"
           }`}
           title="Voice Assistant"
@@ -345,11 +353,15 @@ export default function VoiceNugget({ userType = "alumni" }) {
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   Status:{" "}
-                  <span className={`font-medium ${
-                    status === "Listening..." ? "text-green-600" : 
-                    status === "Thinking..." ? "text-blue-600" : 
-                    "text-gray-700"
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      status === "Listening..."
+                        ? "text-green-600"
+                        : status === "Thinking..."
+                        ? "text-blue-600"
+                        : "text-gray-700"
+                    }`}
+                  >
                     {status}
                   </span>
                 </div>
@@ -393,7 +405,9 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
                 <div className="mt-1 text-gray-800 min-h-6">
                   {transcript || (
-                    <span className="text-gray-400">Speak or type your question...</span>
+                    <span className="text-gray-400">
+                      Speak or type your question...
+                    </span>
                   )}
                 </div>
               </div>
@@ -412,9 +426,7 @@ export default function VoiceNugget({ userType = "alumni" }) {
                   ) : reply ? (
                     reply
                   ) : (
-                    <span className="text-gray-400">
-                      I'll respond here...
-                    </span>
+                    <span className="text-gray-400">I'll respond here...</span>
                   )}
                 </div>
               </div>
@@ -474,7 +486,8 @@ export default function VoiceNugget({ userType = "alumni" }) {
             {/* Footer */}
             <div className="bg-gray-50 p-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 text-center">
-                Tip: Speak clearly and keep your questions concise for best results.
+                Tip: Speak clearly and keep your questions concise for best
+                results.
               </div>
             </div>
           </div>
