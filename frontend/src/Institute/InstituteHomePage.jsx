@@ -199,93 +199,108 @@ const InstituteHomePage = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
 
-      const [userResponse, schoolsResponse] = await Promise.all([
-        axios.get(`${BASE_URL}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${BASE_URL}/api/schools`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const userData = userResponse.data.user;
+
+      const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       const userSchools = schoolsResponse.data.schools;
       const userSchool = userSchools.find(
         (school) => school.owner_id === userData.id
       );
 
-      if (!userSchool) {
-        throw new Error("No school found for user");
-      }
+      console.log("🔍 Raw logo_url from API:", userSchool?.logo_url);
 
-      // Get campaigns for the school
+      const getLogoUrl = (logoUrl) => {
+        if (!logoUrl) return null;
+        if (logoUrl.startsWith("http")) return logoUrl;
+        if (logoUrl.startsWith("blob:")) return logoUrl;
+        if (logoUrl.startsWith("/")) {
+          return `${BASE_URL}${logoUrl}`;
+        }
+        return `${BASE_URL}/${logoUrl}`;
+      };
+
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${userSchool.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
 
-      // Process campaigns and get donor counts
-      const backendFundingNeeds = await Promise.all(
+      // Fetch donor counts for each campaign using campaign routes
+      const campaignsWithDonors = await Promise.all(
         campaignsResponse.data.campaigns.map(async (campaign) => {
-          let donorCount = 0;
-
-          // Try to fetch donor count, but don't fail if endpoint doesn't exist yet
           try {
-            const donorResponse = await axios.get(
+            // ✅ Now using the campaign donor count endpoint
+            const donorCountResponse = await axios.get(
               `${BASE_URL}/api/campaigns/${campaign.id}/donor-count`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
             );
-            donorCount = donorResponse.data.donorCount || 0;
-          } catch (error) {
-            console.log(
-              `Donor count endpoint not available for campaign ${campaign.id}, using 0`
-            );
-            donorCount = 0;
-          }
 
-          return {
-            id: campaign.id,
-            title: campaign.title,
-            description: campaign.short_description || campaign.body || "",
-            goalAmount: campaign.target_amount,
-            raisedAmount: campaign.current_amount,
-            donors: donorCount, // This should now be dynamic
-            status: campaign.status,
-            category: campaign.metadata?.category || "General",
-            dateCreated: campaign.created_at
-              ? campaign.created_at.split("T")[0]
-              : new Date().toISOString().split("T")[0],
-            urgency: campaign.metadata?.urgency || "medium",
-            image:
-              campaign.metadata?.image ||
-              CATEGORY_IMAGES[campaign.metadata?.category] ||
-              CATEGORY_IMAGES.General,
-          };
+            return {
+              id: campaign.id,
+              title: campaign.title,
+              description: campaign.short_description || campaign.body || "",
+              goalAmount: campaign.target_amount,
+              raisedAmount: campaign.current_amount,
+              donors: donorCountResponse.data.donorCount || 0, // ✅ Actual donor count
+              status: campaign.status,
+              category: campaign.metadata?.category || "General",
+              dateCreated: campaign.created_at
+                ? campaign.created_at.split("T")[0]
+                : new Date().toISOString().split("T")[0],
+              urgency: campaign.metadata?.urgency || "medium",
+              image:
+                campaign.metadata?.image ||
+                CATEGORY_IMAGES[campaign.metadata?.category] ||
+                CATEGORY_IMAGES.General,
+            };
+          } catch (error) {
+            console.error(
+              `Error fetching donor count for campaign ${campaign.id}:`,
+              error
+            );
+            // Return campaign with 0 donors if there's an error
+            return {
+              id: campaign.id,
+              title: campaign.title,
+              description: campaign.short_description || campaign.body || "",
+              goalAmount: campaign.target_amount,
+              raisedAmount: campaign.current_amount,
+              donors: 0,
+              status: campaign.status,
+              category: campaign.metadata?.category || "General",
+              dateCreated: campaign.created_at
+                ? campaign.created_at.split("T")[0]
+                : new Date().toISOString().split("T")[0],
+              urgency: campaign.metadata?.urgency || "medium",
+              image:
+                campaign.metadata?.image ||
+                CATEGORY_IMAGES[campaign.metadata?.category] ||
+                CATEGORY_IMAGES.General,
+            };
+          }
         })
       );
 
-      // Calculate totals
-      const totalRaised = backendFundingNeeds.reduce(
-        (sum, need) => sum + (parseFloat(need.raisedAmount) || 0),
-        0
-      );
-      const totalDonors = backendFundingNeeds.reduce(
-        (sum, need) => sum + (parseInt(need.donors) || 0),
+      // Calculate total donors across all campaigns
+      const totalDonors = campaignsWithDonors.reduce(
+        (sum, need) => sum + (need.donors || 0),
         0
       );
 
-      // Get recent donations for the school
-      let recentDonationsData = [];
-      try {
-        const donationsResponse = await axios.get(
-          `${BASE_URL}/api/donations/school/${userSchool.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        recentDonationsData = donationsResponse.data.donations || [];
-      } catch (error) {
-        console.log("School donations endpoint not available yet");
-        recentDonationsData = [];
-      }
+      const totalRaised = campaignsWithDonors.reduce(
+        (sum, need) => sum + (need.raisedAmount || 0),
+        0
+      );
 
       const dynamicInstitution = {
         name:
@@ -297,34 +312,27 @@ const InstituteHomePage = () => {
         type: "Educational Institution",
         established: 2007,
         totalStudents: 0,
-        alumniCount: userSchool.alumni_count || 0,
+        alumniCount: 0,
         description:
           userSchool.description ||
           "Supporting education with quality resources.",
         logo: getLogoUrl(userSchool?.logo_url),
         totalRaised,
-        totalDonors, // This should now show actual count
-        activeNeeds: backendFundingNeeds.filter(
+        totalDonors, // ✅ Now this will show the actual total donor count
+        activeNeeds: campaignsWithDonors.filter(
           (need) => need.status === "active"
         ).length,
-        completedProjects: backendFundingNeeds.filter(
+        completedProjects: campaignsWithDonors.filter(
           (need) => need.status === "completed"
         ).length,
         schoolId: userSchool.id,
       };
 
-      setCurrentInstitution(dynamicInstitution);
-      setFundingNeeds(backendFundingNeeds);
-      setRecentDonations(recentDonationsData);
+      console.log("🔍 Final logo URL:", dynamicInstitution.logo);
+      console.log("📊 Total donors calculated:", totalDonors);
 
-      console.log("Institute data loaded:", {
-        totalDonors,
-        fundingNeeds: backendFundingNeeds.map((n) => ({
-          title: n.title,
-          donors: n.donors,
-        })),
-        institution: dynamicInstitution,
-      });
+      setCurrentInstitution(dynamicInstitution);
+      setFundingNeeds(campaignsWithDonors);
     } catch (error) {
       console.error("Error fetching institute data:", error);
       if (!error.message.includes("No school found")) {
@@ -524,6 +532,7 @@ const InstituteHomePage = () => {
         }
       );
 
+      // Refresh the funding needs list
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
         {
