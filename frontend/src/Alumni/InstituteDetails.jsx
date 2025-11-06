@@ -1,3 +1,5 @@
+/* eslint-disable no-empty */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -31,7 +33,6 @@ const InstituteDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("campaigns");
-
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
@@ -46,12 +47,10 @@ const InstituteDetails = () => {
 
       const token = localStorage.getItem("jwtToken");
 
-      // Fetch school details
       const schoolResponse = await axios.get(`${BASE_URL}/api/schools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Fetch campaigns for this school
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${id}`,
         {
@@ -62,8 +61,7 @@ const InstituteDetails = () => {
       setSchool(schoolResponse.data.school);
       setCampaigns(campaignsResponse.data.campaigns || []);
       setLoading(false);
-    } catch (err) {
-      console.error("Error fetching school data:", err);
+    } catch {
       setError("Failed to load school details. Please try again.");
       setLoading(false);
     }
@@ -82,9 +80,7 @@ const InstituteDetails = () => {
           text: campaign.short_description,
           url: `${window.location.origin}/campaign/${campaign.id}`,
         });
-      } catch (err) {
-        console.log("Error sharing:", err);
-      }
+      } catch {}
     } else {
       navigator.clipboard.writeText(
         `${window.location.origin}/campaign/${campaign.id}`
@@ -104,9 +100,7 @@ const InstituteDetails = () => {
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-      } catch (err) {
-        console.log("Error sharing:", err);
-      }
+      } catch {}
     } else {
       navigator.clipboard.writeText(window.location.href);
       alert("School link copied to clipboard!");
@@ -186,14 +180,9 @@ const InstituteDetails = () => {
     (sum, camp) => sum + (camp.current_amount || 0),
     0
   );
-  const totalNeeded = campaigns.reduce(
-    (sum, camp) => sum + (camp.target_amount || 0),
-    0
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
@@ -220,11 +209,9 @@ const InstituteDetails = () => {
         </div>
       </header>
 
-      {/* School Hero Section */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
-            {/* School Image and Basic Info */}
             <div className="flex-1 w-full">
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
                 <div className="flex-shrink-0 mx-auto sm:mx-0">
@@ -262,7 +249,6 @@ const InstituteDetails = () => {
                       "This institution is dedicated to providing quality education and fostering academic excellence."}
                   </p>
 
-                  {/* Quick Stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center">
                       <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">
@@ -304,7 +290,6 @@ const InstituteDetails = () => {
               </div>
             </div>
 
-            {/* Contact Info Sidebar */}
             <div className="w-full lg:w-80 bg-gray-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-200">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                 Contact Information
@@ -364,7 +349,6 @@ const InstituteDetails = () => {
         </div>
       </section>
 
-      {/* Tabs Section */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex space-x-4 sm:space-x-8 overflow-x-auto">
@@ -402,7 +386,6 @@ const InstituteDetails = () => {
         </div>
       </section>
 
-      {/* Content Section */}
       <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {activeTab === "campaigns" && (
@@ -450,7 +433,6 @@ const InstituteDetails = () => {
                             "Support this important initiative to help the school community."}
                         </p>
 
-                        {/* Progress Bar */}
                         <div className="mb-3 sm:mb-4">
                           <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                             <span>Progress</span>
@@ -479,7 +461,6 @@ const InstituteDetails = () => {
                           </div>
                         </div>
 
-                        {/* Campaign Details */}
                         <div className="space-y-1 sm:space-y-2 mb-3 sm:mb-4">
                           {campaign.start_at && (
                             <div className="flex items-center text-xs sm:text-sm text-gray-600">
@@ -501,7 +482,6 @@ const InstituteDetails = () => {
                           )}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="flex gap-2 sm:gap-3">
                           <button
                             onClick={() => handleDonate(campaign)}
@@ -546,7 +526,6 @@ const InstituteDetails = () => {
                     </div>
                   )}
 
-                  {/* Additional School Details */}
                   <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-3 sm:space-y-4">
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -655,7 +634,6 @@ const InstituteDetails = () => {
                             "This project has been successfully completed."}
                         </p>
 
-                        {/* Final Progress */}
                         <div className="mb-3 sm:mb-4">
                           <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                             <span>Final Amount</span>
@@ -672,7 +650,6 @@ const InstituteDetails = () => {
                           </div>
                         </div>
 
-                        {/* Completion Details */}
                         <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                           {campaign.end_at && (
                             <div className="flex items-center">

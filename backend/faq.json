@@ -2,22 +2,55 @@
   "quick_donation": {
     "keywords": ["donate", "donation", "give now", "contribute", "fund"],
     "snippet": "Make a one-time donation to a listed school or campaign. Select amount and pay via UPI, net banking, or card.",
-    "action": { "type": "navigate", "label": "Donate", "url": "/alumni/institute-details" }
+    "action": {
+      "type": "navigate",
+      "label": "Donate",
+      "url": "/alumni/institute-details"
+    }
   },
   "campaigns": {
-    "keywords": ["campaigns", "projects", "fundraisers", "school campaigns", "active campaigns", "ongoing campaigns"],
+    "keywords": [
+      "campaigns",
+      "projects",
+      "fundraisers",
+      "school campaigns",
+      "active campaigns",
+      "ongoing campaigns"
+    ],
     "snippet": "Schools can publish donation campaigns. Each campaign shows target amount, raised amount, donors list, and progress bar.",
-    "action": { "type": "navigate", "label": "View Campaigns", "url": "/campaigns" }
+    "action": {
+      "type": "navigate",
+      "label": "View Campaigns",
+      "url": "/campaigns"
+    }
   },
   "post_campaign": {
-    "keywords": ["add campaign", "post campaign", "new campaign", "run campaign"],
+    "keywords": [
+      "add campaign",
+      "post campaign",
+      "new campaign",
+      "run campaign"
+    ],
     "snippet": "Registered schools can create new campaigns by providing photos, description, target amount, and duration.",
-    "action": { "type": "navigate", "label": "Create Campaign", "url": "/campaigns/new" }
+    "action": {
+      "type": "navigate",
+      "label": "Create Campaign",
+      "url": "/campaigns/new"
+    }
   },
   "impact_reports": {
-    "keywords": ["fund usage", "where money goes", "impact reports", "transparency"],
+    "keywords": [
+      "fund usage",
+      "where money goes",
+      "impact reports",
+      "transparency"
+    ],
     "snippet": "Campaign owners must upload quarterly usage reports so donors can see how funds were spent, including photos and receipts.",
-    "action": { "type": "navigate", "label": "Impact Reports", "url": "/impact" }
+    "action": {
+      "type": "navigate",
+      "label": "Impact Reports",
+      "url": "/impact"
+    }
   },
   "tax_benefits": {
     "keywords": ["80g", "tax exemption", "donation receipt", "tax benefit"],
@@ -25,13 +58,26 @@
     "action": { "type": "navigate", "label": "Tax Benefits", "url": "/tax" }
   },
   "register_school": {
-    "keywords": ["register school", "school signup", "add school", "join as school"],
+    "keywords": [
+      "register school",
+      "school signup",
+      "add school",
+      "join as school"
+    ],
     "snippet": "Underprivileged schools can apply for onboarding by submitting school registration details, documents, and photos.",
-    "action": { "type": "navigate", "label": "Register as School", "url": "/school/register" }
+    "action": {
+      "type": "navigate",
+      "label": "Register as School",
+      "url": "/school/register"
+    }
   },
   "donor_history": {
     "keywords": ["my donations", "donation history", "past donations"],
     "snippet": "Donors can view all past donations, download receipts, and track impact updates for each campaign they contributed to.",
-    "action": { "type": "navigate", "label": "View Donation History", "url": "/account/donations" }
+    "action": {
+      "type": "navigate",
+      "label": "View Donation History",
+      "url": "/account/donations"
+    }
   }
 }

@@ -199,79 +199,93 @@ const InstituteHomePage = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
 
-      const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [userResponse, schoolsResponse] = await Promise.all([
+        axios.get(`${BASE_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${BASE_URL}/api/schools`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
       const userData = userResponse.data.user;
-
-      const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
       const userSchools = schoolsResponse.data.schools;
       const userSchool = userSchools.find(
         (school) => school.owner_id === userData.id
       );
 
-      console.log("🔍 Raw logo_url from API:", userSchool?.logo_url);
+      if (!userSchool) {
+        throw new Error("No school found for user");
+      }
 
-      // Fix the logo URL - handle both absolute and relative URLs
-      const getLogoUrl = (logoUrl) => {
-        if (!logoUrl) return null;
-
-        // If it's already a full URL, return as is
-        if (logoUrl.startsWith("http")) return logoUrl;
-
-        // If it's a blob URL, we need to handle it differently
-        if (logoUrl.startsWith("blob:")) return logoUrl;
-
-        // If it's a relative path, make it absolute
-        if (logoUrl.startsWith("/")) {
-          return `${BASE_URL}${logoUrl}`;
-        }
-
-        // For other cases, assume it's relative to base URL
-        return `${BASE_URL}/${logoUrl}`;
-      };
-
+      // Get campaigns for the school
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${userSchool.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const backendFundingNeeds = campaignsResponse.data.campaigns.map(
-        (campaign) => ({
-          id: campaign.id,
-          title: campaign.title,
-          description: campaign.short_description || campaign.body || "",
-          goalAmount: campaign.target_amount,
-          raisedAmount: campaign.current_amount,
-          donors: 0,
-          status: campaign.status,
-          category: campaign.metadata?.category || "General",
-          dateCreated: campaign.created_at
-            ? campaign.created_at.split("T")[0]
-            : new Date().toISOString().split("T")[0],
-          urgency: campaign.metadata?.urgency || "medium",
-          image:
-            campaign.metadata?.image ||
-            CATEGORY_IMAGES[campaign.metadata?.category] ||
-            CATEGORY_IMAGES.General,
+      // Process campaigns and get donor counts
+      const backendFundingNeeds = await Promise.all(
+        campaignsResponse.data.campaigns.map(async (campaign) => {
+          let donorCount = 0;
+
+          // Try to fetch donor count, but don't fail if endpoint doesn't exist yet
+          try {
+            const donorResponse = await axios.get(
+              `${BASE_URL}/api/campaigns/${campaign.id}/donor-count`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            donorCount = donorResponse.data.donorCount || 0;
+          } catch (error) {
+            console.log(
+              `Donor count endpoint not available for campaign ${campaign.id}, using 0`
+            );
+            donorCount = 0;
+          }
+
+          return {
+            id: campaign.id,
+            title: campaign.title,
+            description: campaign.short_description || campaign.body || "",
+            goalAmount: campaign.target_amount,
+            raisedAmount: campaign.current_amount,
+            donors: donorCount, // This should now be dynamic
+            status: campaign.status,
+            category: campaign.metadata?.category || "General",
+            dateCreated: campaign.created_at
+              ? campaign.created_at.split("T")[0]
+              : new Date().toISOString().split("T")[0],
+            urgency: campaign.metadata?.urgency || "medium",
+            image:
+              campaign.metadata?.image ||
+              CATEGORY_IMAGES[campaign.metadata?.category] ||
+              CATEGORY_IMAGES.General,
+          };
         })
       );
 
+      // Calculate totals
       const totalRaised = backendFundingNeeds.reduce(
-        (sum, need) => sum + (need.raisedAmount || 0),
+        (sum, need) => sum + (parseFloat(need.raisedAmount) || 0),
+        0
+      );
+      const totalDonors = backendFundingNeeds.reduce(
+        (sum, need) => sum + (parseInt(need.donors) || 0),
         0
       );
 
-      const totalDonors = backendFundingNeeds.reduce(
-        (sum, need) => sum + (need.donors || 0),
-        0
-      );
+      // Get recent donations for the school
+      let recentDonationsData = [];
+      try {
+        const donationsResponse = await axios.get(
+          `${BASE_URL}/api/donations/school/${userSchool.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        recentDonationsData = donationsResponse.data.donations || [];
+      } catch (error) {
+        console.log("School donations endpoint not available yet");
+        recentDonationsData = [];
+      }
 
       const dynamicInstitution = {
         name:
@@ -283,13 +297,13 @@ const InstituteHomePage = () => {
         type: "Educational Institution",
         established: 2007,
         totalStudents: 0,
-        alumniCount: 0,
+        alumniCount: userSchool.alumni_count || 0,
         description:
           userSchool.description ||
           "Supporting education with quality resources.",
-        logo: getLogoUrl(userSchool?.logo_url), // Use the fixed URL function
+        logo: getLogoUrl(userSchool?.logo_url),
         totalRaised,
-        totalDonors,
+        totalDonors, // This should now show actual count
         activeNeeds: backendFundingNeeds.filter(
           (need) => need.status === "active"
         ).length,
@@ -299,10 +313,18 @@ const InstituteHomePage = () => {
         schoolId: userSchool.id,
       };
 
-      console.log("🔍 Final logo URL:", dynamicInstitution.logo);
-
       setCurrentInstitution(dynamicInstitution);
       setFundingNeeds(backendFundingNeeds);
+      setRecentDonations(recentDonationsData);
+
+      console.log("Institute data loaded:", {
+        totalDonors,
+        fundingNeeds: backendFundingNeeds.map((n) => ({
+          title: n.title,
+          donors: n.donors,
+        })),
+        institution: dynamicInstitution,
+      });
     } catch (error) {
       console.error("Error fetching institute data:", error);
       if (!error.message.includes("No school found")) {
@@ -502,7 +524,6 @@ const InstituteHomePage = () => {
         }
       );
 
-      // Refresh the funding needs list
       const campaignsResponse = await axios.get(
         `${BASE_URL}/api/campaigns?school_id=${currentInstitution.schoolId}`,
         {

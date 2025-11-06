@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -19,14 +20,11 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const Landing = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isVisible, setIsVisible] = useState({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // State for real data
   const [featuredInstitutions, setFeaturedInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +35,6 @@ const Landing = () => {
   const [carouselSpeed] = useState(0.1);
   const navigate = useNavigate();
 
-  // Fetch featured schools from backend
   useEffect(() => {
     const fetchFeaturedSchools = async () => {
       try {
@@ -45,7 +42,6 @@ const Landing = () => {
         const response = await axios.get(`${BASE_URL}/api/schools`);
 
         if (response.data.schools) {
-          // Transform the backend data to match your frontend structure
           const transformedSchools = response.data.schools.map(
             (school, index) => ({
               id: school.id,
@@ -65,10 +61,8 @@ const Landing = () => {
 
           setFeaturedInstitutions(transformedSchools);
         }
-      } catch (err) {
-        console.error("Error fetching schools:", err);
+      } catch {
         setError("Failed to load featured schools");
-        // Fallback to static data if API fails
         setFeaturedInstitutions(getFallbackInstitutions());
       } finally {
         setLoading(false);
@@ -78,7 +72,6 @@ const Landing = () => {
     fetchFeaturedSchools();
   }, []);
 
-  // Helper functions
   const getDefaultImage = (index) => {
     const defaultImages = [
       "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop",
@@ -148,7 +141,6 @@ const Landing = () => {
     { number: "10+", label: "Countries Reached", icon: Globe },
   ];
 
-  // Existing useEffect hooks
   useEffect(() => {
     const updateMousePosition = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -185,6 +177,7 @@ const Landing = () => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoPlaying]);
 
   useEffect(() => {
@@ -196,7 +189,6 @@ const Landing = () => {
     const gap = 32;
     const totalWidth = (cardWidth + gap) * cards.length;
 
-    // Clear existing clones
     const existingClones = carousel.querySelectorAll(".clone");
     existingClones.forEach((clone) => clone.remove());
 
@@ -231,11 +223,6 @@ const Landing = () => {
     };
   }, [carouselSpeed, featuredInstitutions]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log("Searching for:", searchQuery);
-  };
-
   const parallaxOffset = (strength = 0.5) => ({
     transform: `translate(${
       (mousePosition.x - window.innerWidth / 2) * strength * 0.01
@@ -248,7 +235,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50 lg:hidden"
@@ -256,7 +242,6 @@ const Landing = () => {
         />
       )}
 
-      {/* Mobile Menu */}
       <div
         className={`fixed top-0 right-0 h-full w-80 bg-white z-50 transform transition-transform duration-300 lg:hidden ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
@@ -304,7 +289,6 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Background Elements - Hidden on mobile for performance */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
@@ -333,7 +317,6 @@ const Landing = () => {
         ></div>
       </div>
 
-      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-40 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-18">
@@ -353,7 +336,6 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-8">
               {["How It Works", "Schools", "About"].map((item, index) => (
                 <a
@@ -374,7 +356,6 @@ const Landing = () => {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -385,7 +366,6 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section
         className="pt-20 lg:pt-24 pb-16 lg:pb-32 relative overflow-hidden"
         id="hero"
@@ -455,7 +435,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
       <section
         className="py-12 lg:py-20 bg-white border-y border-gray-200"
         id="stats"
@@ -493,7 +472,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section
         id="how-it-works"
         className="py-16 lg:py-20 bg-gray-100"
@@ -576,7 +554,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Schools Section */}
       <section id="schools" className="py-16 lg:py-20 bg-white" data-animate>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
@@ -586,12 +563,6 @@ const Landing = () => {
                 : "translate-y-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 lg:px-6 py-2 lg:py-3 border border-gray-300 shadow-sm mb-4 lg:mb-6">
-              <Globe className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700 animate-pulse" />
-              <span className="text-xs lg:text-sm font-semibold text-gray-800">
-                Global Network
-              </span>
-            </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 lg:mb-8">
               Featured <span className="text-gray-800">Schools</span>
             </h2>
@@ -600,7 +571,6 @@ const Landing = () => {
             </p>
           </div>
 
-          {/* Loading State */}
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
@@ -608,7 +578,6 @@ const Landing = () => {
             </div>
           )}
 
-          {/* Error State */}
           {error && !loading && (
             <div className="text-center py-12">
               <p className="text-red-600 mb-4">{error}</p>
@@ -616,7 +585,6 @@ const Landing = () => {
             </div>
           )}
 
-          {/* Mobile Cards Stack */}
           <div className="block lg:hidden space-y-6 px-4">
             {featuredInstitutions.slice(0, 3).map((institution) => (
               <div
@@ -663,7 +631,6 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* Desktop Carousel */}
           <div className="hidden lg:block relative overflow-hidden">
             {featuredInstitutions.length > 0 ? (
               <div ref={carouselRef} className="flex w-max gap-6 px-6">
@@ -724,7 +691,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section
         className="py-16 lg:py-20 bg-gray-900 relative overflow-hidden"
         id="cta"
@@ -772,7 +738,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-50 py-12 lg:py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

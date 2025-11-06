@@ -7,7 +7,6 @@ const NotFoundPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"></div>
         <div
@@ -21,7 +20,6 @@ const NotFoundPage = () => {
       </div>
 
       <div className="max-w-md w-full text-center relative z-10">
-        {/* Icon */}
         <div className="mb-8">
           <div className="relative inline-block">
             <div className="w-24 h-24 bg-gray-800 rounded-3xl flex items-center justify-center shadow-md mx-auto">
@@ -36,15 +34,14 @@ const NotFoundPage = () => {
           </div>
         </div>
 
-        {/* Text Content */}
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           Page Not Found
         </h1>
         <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
-          Sorry, we couldn't find the page you're looking for. The page might have been moved, deleted, or perhaps you mistyped the address.
+          Sorry, we couldn't find the page you're looking for. The page might
+          have been moved, deleted, or perhaps you mistyped the address.
         </p>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => navigate(-1)}
@@ -62,7 +59,6 @@ const NotFoundPage = () => {
           </button>
         </div>
 
-        {/* Additional Help */}
         <div className="mt-12 pt-8 border-t border-gray-200">
           <p className="text-gray-500 mb-4">Still need help?</p>
           <div className="flex justify-center space-x-6">
@@ -86,8 +82,13 @@ const NotFoundPage = () => {
 
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(3deg); }
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-10px) rotate(3deg);
+          }
         }
       `}</style>
     </div>

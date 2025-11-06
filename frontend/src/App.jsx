@@ -8,22 +8,18 @@ import AlumniProfile from "./Alumni/AlumniProfile";
 import InstituteProfile from "./Institute/InstituteProfile";
 import InstituteDetails from "./Alumni/InstituteDetails";
 import VoiceNugget from "./components/VoiceNugget";
-
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
-
 import ProtectedRoute from "./components/ProtectedRoute";
-
 import PaymentCallback from "./pages/PaymentCallback";
 
-// Component to determine user type based on route
 function VoiceNuggetWrapper() {
   const location = useLocation();
   
   const getCurrentUserType = () => {
     if (location.pathname.startsWith('/alumni')) return 'alumni';
     if (location.pathname.startsWith('/institute')) return 'institution';
-    return 'guest'; // for landing page, auth, etc.
+    return 'guest';
   };
 
   return <VoiceNugget userType={getCurrentUserType()} />;
@@ -33,7 +29,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* VoiceChat will be available on ALL pages */}
         <VoiceNuggetWrapper />
         
         <Routes>
@@ -41,8 +36,6 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/signup/:userType" element={<Auth />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
-
-          {/* Alumni only */}
           <Route
             path="/alumni/home"
             element={
@@ -67,8 +60,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Institute only */}
           <Route
             path="/institute/home"
             element={
@@ -85,7 +76,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

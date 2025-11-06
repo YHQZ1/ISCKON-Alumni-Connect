@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Loader, ArrowLeft, Heart } from "lucide-react";
@@ -26,8 +27,7 @@ const PaymentCallback = () => {
   const verifyPaymentStatus = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
-      
-      // First, check with our backend
+
       const response = await axios.get(
         `${BASE_URL}/api/payments/status/${orderId}`,
         {
@@ -38,34 +38,30 @@ const PaymentCallback = () => {
       );
 
       const paymentData = response.data;
-      
-      
+
       if (paymentData.latestPayment?.payment_status === "SUCCESS") {
         setPaymentStatus("success");
         setOrderDetails({
           orderId: orderId,
           amount: paymentData.order?.order_amount,
-          transactionId: paymentData.latestPayment?.cf_payment_id
+          transactionId: paymentData.latestPayment?.cf_payment_id,
         });
       } else if (paymentData.latestPayment?.payment_status === "FAILED") {
         setPaymentStatus("failed");
       } else {
-        // If status is still pending, wait a bit and check again
         setTimeout(verifyPaymentStatus, 2000);
       }
-
-    } catch (err) {
-      console.error("Error verifying payment:", err);
+    } catch {
       setPaymentStatus("error");
       setError("Failed to verify payment status");
     }
   };
+
   useEffect(() => {
     if (paymentStatus === "success") {
       localStorage.setItem("payment_success", Date.now().toString());
     }
   }, [paymentStatus]);
-  
 
   const handleRetry = () => {
     navigate("/alumni/home");
@@ -86,9 +82,7 @@ const PaymentCallback = () => {
           <p className="text-gray-600 mb-6">
             Please wait while we confirm your payment status...
           </p>
-          <div className="text-sm text-gray-500">
-            Order ID: {orderId}
-          </div>
+          <div className="text-sm text-gray-500">Order ID: {orderId}</div>
         </div>
       </div>
     );
@@ -101,13 +95,14 @@ const PaymentCallback = () => {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          
+
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Payment Successful!
           </h2>
-          
+
           <p className="text-gray-600 mb-6">
-            Thank you for your generous donation. Your support makes a difference.
+            Thank you for your generous donation. Your support makes a
+            difference.
           </p>
 
           {orderDetails && (
@@ -119,12 +114,16 @@ const PaymentCallback = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Order ID:</span>
-                  <span className="font-mono text-xs">{orderDetails.orderId}</span>
+                  <span className="font-mono text-xs">
+                    {orderDetails.orderId}
+                  </span>
                 </div>
                 {orderDetails.transactionId && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Transaction ID:</span>
-                    <span className="font-mono text-xs">{orderDetails.transactionId}</span>
+                    <span className="font-mono text-xs">
+                      {orderDetails.transactionId}
+                    </span>
                   </div>
                 )}
               </div>
@@ -139,7 +138,7 @@ const PaymentCallback = () => {
               <Heart className="h-4 w-4" />
               <span>Support More Campaigns</span>
             </button>
-            
+
             <button
               onClick={() => navigate("/alumni/home")}
               className="w-full py-3 border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all duration-300 font-semibold"
@@ -159,11 +158,11 @@ const PaymentCallback = () => {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle className="h-8 w-8 text-red-600" />
           </div>
-          
+
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Payment Failed
           </h2>
-          
+
           <p className="text-gray-600 mb-6">
             Your payment could not be processed. Please try again.
           </p>
@@ -175,7 +174,7 @@ const PaymentCallback = () => {
             >
               Try Again
             </button>
-            
+
             <button
               onClick={() => navigate("/alumni/home")}
               className="w-full py-3 border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-all duration-300 font-semibold flex items-center justify-center space-x-2"
@@ -189,20 +188,20 @@ const PaymentCallback = () => {
     );
   }
 
-  // Error state
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-sm border border-gray-200">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <XCircle className="h-8 w-8 text-red-600" />
         </div>
-        
+
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Something Went Wrong
         </h2>
-        
+
         <p className="text-gray-600 mb-6">
-          {error || "Unable to verify payment status. Please check your payment history."}
+          {error ||
+            "Unable to verify payment status. Please check your payment history."}
         </p>
 
         <button

@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-empty */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -14,8 +17,6 @@ import {
   User,
   Bell,
   Settings,
-  TrendingUp,
-  DollarSign,
   Target,
   Award,
   ChevronRight,
@@ -24,7 +25,6 @@ import {
   IndianRupee,
   Menu,
   X,
-  RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -41,7 +41,6 @@ const AlumniHomePage = () => {
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const observerRef = useRef();
-  const animationRef = useRef(null);
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState({
@@ -70,7 +69,6 @@ const AlumniHomePage = () => {
     return () => window.removeEventListener("mousemove", updateMousePosition);
   }, []);
 
-  // Add this useEffect to sync donation stats with user data
   useEffect(() => {
     if (donationStats.totalDonated > 0) {
       setCurrentUser((prev) => ({
@@ -79,21 +77,16 @@ const AlumniHomePage = () => {
         projectsSupported: donationStats.projectsSupported,
       }));
     }
-  }, [donationStats]); // This runs when donationStats updates
+  }, [donationStats]);
 
-  // Add this useEffect to refresh data when page gains focus
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        // User returned to the page - refresh data
-        console.log("Page visible - refreshing data...");
         refreshData();
       }
     };
 
     const handleFocus = () => {
-      // Page gained focus - refresh data
-      console.log("Page focused - refreshing data...");
       refreshData();
     };
 
@@ -122,22 +115,18 @@ const AlumniHomePage = () => {
     const elements = document.querySelectorAll("[data-animate]");
     elements.forEach((el) => observerRef.current?.observe(el));
 
-    return () => {
-      observerRef.current?.disconnect();
-      cancelAnimationFrame(animationRef.current);
-    };
+    return () => observerRef.current?.disconnect();
   }, []);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
         setIsLoading(true);
-        await fetchUserData(); // First - get basic user info
-        await fetchDonationStats(); // Second - get donation amounts
-        await fetchFeaturedInstitutions(); // Third - institutions
-        await fetchRecentActivities(); // Fourth - activities
+        await fetchUserData();
+        await fetchDonationStats();
+        await fetchFeaturedInstitutions();
+        await fetchRecentActivities();
       } catch (error) {
-        console.error("Error initializing data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -146,52 +135,39 @@ const AlumniHomePage = () => {
     initializeData();
   }, []);
 
-  // Add this function to refresh all data
   const refreshData = async () => {
     try {
-      console.log("Refreshing dashboard data...");
       await fetchDonationStats();
       await fetchRecentActivities();
-      await fetchFeaturedInstitutions(); // This will update campaign amounts
-      console.log("Dashboard data refreshed successfully");
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    }
+      await fetchFeaturedInstitutions();
+    } catch (error) {}
   };
 
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
       const response = await axios.get(`${BASE_URL}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const userData = response.data.user;
-
-      // Don't use donationStats here - it's not updated yet
-      // Just set the basic user info
       setCurrentUser({
         name: `${userData.first_name} ${userData.last_name}`,
         batch: userData.graduation_year
           ? `Class of ${userData.graduation_year}`
           : "Alumni",
         school: userData.institution_name || "Your School",
-        totalDonated: 0, // Will be updated by donationStats
-        projectsSupported: 0, // Will be updated by donationStats
+        totalDonated: 0,
+        projectsSupported: 0,
         avatar: "https://cdn-icons-png.flaticon.com/512/9187/9187604.png",
       });
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchFeaturedInstitutions = async () => {
     try {
       setInstitutionsLoading(true);
       setInstitutionsError(null);
-
       const token = localStorage.getItem("jwtToken");
 
       const [schoolsResponse, campaignsResponse] = await Promise.all([
@@ -203,52 +179,14 @@ const AlumniHomePage = () => {
         }),
       ]);
 
-      // 🚨 ADD DEBUG LOGS HERE 🚨
-      console.log("=== DEBUG DATA ===");
-      console.log("🏫 Schools data:", schoolsResponse.data.schools);
-      console.log("🎯 Campaigns data:", campaignsResponse.data.campaigns);
-
-      // Check the structure of first campaign
-      if (
-        campaignsResponse.data.campaigns &&
-        campaignsResponse.data.campaigns.length > 0
-      ) {
-        console.log(
-          "📋 First campaign structure:",
-          campaignsResponse.data.campaigns[0]
-        );
-        console.log(
-          "🔍 Campaign school_id:",
-          campaignsResponse.data.campaigns[0].school_id
-        );
-        console.log(
-          "🔍 Campaign school data:",
-          campaignsResponse.data.campaigns[0].schools
-        );
-      }
-
-      // Check first school
-      if (
-        schoolsResponse.data.schools &&
-        schoolsResponse.data.schools.length > 0
-      ) {
-        console.log(
-          "📋 First school structure:",
-          schoolsResponse.data.schools[0]
-        );
-      }
-      console.log("=== END DEBUG ===");
-
       const schools = schoolsResponse.data.schools;
       const campaigns = campaignsResponse.data.campaigns;
 
-      // Create school lookup map first
       const schoolMap = {};
       schools.forEach((school) => {
         schoolMap[school.id] = school;
       });
 
-      // Group campaigns by school_id
       const campaignsBySchool = {};
       campaigns.forEach((campaign) => {
         if (campaign.school_id) {
@@ -273,20 +211,6 @@ const AlumniHomePage = () => {
           (sum, camp) => sum + (camp.current_amount || 0),
           0
         );
-
-        console.log(`🏫 School: ${school.name}`, {
-          schoolId: school.id,
-          campaignsCount: schoolCampaigns.length,
-          activeCampaignsCount: activeCampaigns.length,
-          totalNeeded,
-          totalRaised,
-          campaigns: activeCampaigns.map((camp) => ({
-            title: camp.title,
-            current_amount: camp.current_amount,
-            target_amount: camp.target_amount,
-            status: camp.status,
-          })),
-        });
 
         const urgentCampaign = activeCampaigns.sort(
           (a, b) =>
@@ -323,10 +247,8 @@ const AlumniHomePage = () => {
       });
 
       setFeaturedInstitutions(transformedInstitutions);
-      console.log("🎯 FINAL TRANSFORMED INSTITUTIONS:", transformedInstitutions);
       setInstitutionsLoading(false);
     } catch (error) {
-      console.error("Error fetching featured institutions:", error);
       setInstitutionsError(
         "Failed to load institutions. Please try again later."
       );
@@ -337,11 +259,8 @@ const AlumniHomePage = () => {
   const fetchDonationStats = async () => {
     try {
       const token = localStorage.getItem("jwtToken");
-
       const response = await axios.get(`${BASE_URL}/api/donations/my-stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.data) {
@@ -351,34 +270,27 @@ const AlumniHomePage = () => {
           schoolsHelped: response.data.schoolsHelped || 0,
         });
 
-        // Also update currentUser with real data
         setCurrentUser((prev) => ({
           ...prev,
           totalDonated: response.data.totalDonated || 0,
           projectsSupported: response.data.projectsSupported || 0,
         }));
       }
-    } catch (error) {
-      console.error("Error fetching donation stats:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchRecentActivities = async () => {
     try {
       setActivitiesLoading(true);
       const token = localStorage.getItem("jwtToken");
-
-      // Fetch recent donations
       const response = await axios.get(`${BASE_URL}/api/donations/my-recent`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const activities = response.data.donations.map((donation) => ({
         id: donation.id,
         type: "donation",
-        school: donation.campaigns?.schools?.name || "School", // Keep this but also add fallback
+        school: donation.campaigns?.schools?.name || "School",
         amount: donation.amount,
         project: donation.campaigns?.title || "Campaign",
         date: formatTimeAgo(donation.created_at),
@@ -389,7 +301,6 @@ const AlumniHomePage = () => {
       setRecentActivities(activities);
       setActivitiesLoading(false);
     } catch (error) {
-      console.error("Error fetching recent activities:", error);
       setRecentActivities([]);
       setActivitiesLoading(false);
     }
@@ -440,7 +351,6 @@ const AlumniHomePage = () => {
     };
 
     let daysAgo;
-
     if (campaigns.length > 0) {
       const latestCampaign = campaigns.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -491,7 +401,6 @@ const AlumniHomePage = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
   };
 
   const handleLogout = () => {
@@ -499,13 +408,7 @@ const AlumniHomePage = () => {
     navigate("/");
   };
 
-  const handleDonate = (institutionId, campaignId = null) => {
-    console.log("Donate to:", institutionId, "Campaign:", campaignId);
-  };
-
-  const handleViewSchool = (institutionId) => {
-    navigate(`/school/${institutionId}`);
-  };
+  const handleDonate = (institutionId, campaignId = null) => {};
 
   const parallaxOffset = (strength = 0.5) => ({
     transform: `translate(${
@@ -537,6 +440,128 @@ const AlumniHomePage = () => {
     }
   });
 
+  const StatCard = ({ stat, index }) => {
+    const IconComponent = stat.icon;
+    return (
+      <div className="flex-shrink-0 w-36 bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200 shadow-sm">
+        <IconComponent className={`h-5 w-5 ${stat.color} mb-1`} />
+        <div className="text-lg font-bold text-gray-800">{stat.value}</div>
+        <div className="text-xs text-gray-600">{stat.label}</div>
+      </div>
+    );
+  };
+
+  const ActivityItem = ({ activity, index }) => {
+    const IconComponent = activity.icon;
+    return (
+      <div className="flex items-center space-x-3 p-2 rounded-xl bg-gray-100">
+        <div className="w-8 h-8 bg-gray-800 rounded-xl flex items-center justify-center">
+          <IconComponent className="h-4 w-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-semibold text-gray-800 truncate">
+            {activity.type === "donation" && `Donated ₹${activity.amount}`}
+          </div>
+          <div className="text-xs text-gray-600 truncate">
+            {activity.school} • {activity.date}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const InstitutionCard = ({ institution }) => (
+    <div className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200">
+      <div className="relative overflow-hidden">
+        <img
+          src={institution.image}
+          alt={institution.name}
+          className="w-full h-40 object-cover"
+          loading="lazy"
+        />
+        <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-1 border border-gray-300 shadow-sm">
+          <span className="text-xs font-bold text-gray-800">
+            Updated {institution.recentUpdate}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
+          {institution.name}
+        </h3>
+
+        <div className="flex items-center text-gray-600 mb-2">
+          <MapPin className="h-3 w-3 mr-1 text-gray-500" />
+          <span className="text-xs font-medium">{institution.location}</span>
+        </div>
+
+        <p className="text-xs text-gray-600 mb-3 leading-relaxed line-clamp-2">
+          {institution.description}
+        </p>
+
+        <div className="mb-3">
+          <div className="flex justify-between text-xs text-gray-600 mb-1">
+            <span>Progress</span>
+            <span>
+              ₹{institution.raised.toLocaleString()} of ₹
+              {institution.totalNeeded.toLocaleString()}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div
+              className="bg-gray-800 h-1.5 rounded-full transition-all duration-700"
+              style={{
+                width: `${
+                  institution.totalNeeded > 0
+                    ? (institution.raised / institution.totalNeeded) * 100
+                    : 0
+                }%`,
+              }}
+            ></div>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {institution.totalNeeded > 0
+              ? Math.round((institution.raised / institution.totalNeeded) * 100)
+              : 0}
+            % funded
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center text-gray-600">
+            <Users className="h-3 w-3 mr-1 text-gray-500" />
+            <span className="text-xs font-medium">
+              {institution.alumni} alumni
+            </span>
+          </div>
+          <div className="text-xs text-gray-600">
+            {institution.needs} active needs
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleDonate(institution.id)}
+            className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold text-sm flex items-center justify-center space-x-1"
+          >
+            <Heart className="h-3 w-3" />
+            <span>Donate</span>
+          </button>
+          <button
+            onClick={() =>
+              navigate(`/alumni/institute-details/${institution.id}`)
+            }
+            className="px-3 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold text-sm flex items-center justify-center"
+          >
+            <Eye className="h-3 w-3 mr-1" />
+            View
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {isLoading && (
@@ -548,7 +573,6 @@ const AlumniHomePage = () => {
         </div>
       )}
 
-      {/* Background Elements - Reduced on mobile */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse hidden md:block"
@@ -570,11 +594,9 @@ const AlumniHomePage = () => {
         ></div>
       </div>
 
-      {/* Navigation - Mobile Optimized */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
-            {/* Logo Section - Now visible on mobile too */}
             <div className="flex items-center space-x-3 group">
               <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-md">
                 <GraduationCap className="h-6 w-6 text-gray-50" />
@@ -589,7 +611,6 @@ const AlumniHomePage = () => {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <div className="relative">
                 <Bell className="h-6 w-6 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer" />
@@ -618,7 +639,6 @@ const AlumniHomePage = () => {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <div className="flex md:hidden items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -634,7 +654,6 @@ const AlumniHomePage = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200 px-4 py-4">
             <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-100 rounded-2xl">
@@ -679,7 +698,6 @@ const AlumniHomePage = () => {
         )}
       </nav>
 
-      {/* Welcome Section - Mobile Optimized */}
       <section
         className="pt-20 pb-8 px-4 sm:px-6 relative overflow-hidden"
         id="welcome"
@@ -695,7 +713,6 @@ const AlumniHomePage = () => {
           >
             <div className="flex flex-col lg:flex-row items-stretch justify-between gap-8">
               <div className="flex-1 w-full">
-                {/* Welcome Badge */}
                 <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 border border-gray-300 shadow-sm mb-4">
                   <Star className="h-4 w-4 text-gray-700" />
                   <span className="text-xs font-semibold text-gray-800">
@@ -703,7 +720,6 @@ const AlumniHomePage = () => {
                   </span>
                 </div>
 
-                {/* Main Heading */}
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight text-gray-900">
                   Your Impact
                   <br />
@@ -715,31 +731,13 @@ const AlumniHomePage = () => {
                   and track the impact of your contributions.
                 </p>
 
-                {/* Quick Stats - Grid Layout for Mobile */}
                 <div className="flex gap-3 mb-6 overflow-x-auto">
-                  {quickStats.map((stat, index) => {
-                    const IconComponent = stat.icon;
-                    return (
-                      <div
-                        key={index}
-                        className="flex-shrink-0 w-36 bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200 shadow-sm"
-                      >
-                        <IconComponent
-                          className={`h-5 w-5 ${stat.color} mb-1`}
-                        />
-                        <div className="text-lg font-bold text-gray-800">
-                          {stat.value}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {stat.label}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {quickStats.map((stat, index) => (
+                    <StatCard key={index} stat={stat} index={index} />
+                  ))}
                 </div>
               </div>
 
-              {/* Recent Activities - Stack below on mobile */}
               <div className="w-full lg:w-96 flex flex-col">
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm flex-1 flex flex-col">
                   <h3 className="text-base font-semibold text-gray-800 mb-3">
@@ -764,33 +762,15 @@ const AlumniHomePage = () => {
                         No recent activity
                       </p>
                     ) : (
-                      recentActivities.slice(0, 2).map((activity, index) => {
-                        const IconComponent = activity.icon;
-                        return (
-                          <div
+                      recentActivities
+                        .slice(0, 2)
+                        .map((activity, index) => (
+                          <ActivityItem
                             key={activity.id || index}
-                            className="flex items-center space-x-3 p-2 rounded-xl bg-gray-100"
-                          >
-                            <div className="w-8 h-8 bg-gray-800 rounded-xl flex items-center justify-center">
-                              <IconComponent className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-semibold text-gray-800 truncate">
-                                {activity.type === "donation" &&
-                                  `Donated ₹${activity.amount}`}
-                                {activity.type === "milestone" &&
-                                  activity.milestone}
-                                {activity.type === "update" && activity.update}
-                                {activity.type === "campaign_created" &&
-                                  activity.action}
-                              </div>
-                              <div className="text-xs text-gray-600 truncate">
-                                {activity.school} • {activity.date}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                            activity={activity}
+                            index={index}
+                          />
+                        ))
                     )}
                   </div>
 
@@ -807,7 +787,6 @@ const AlumniHomePage = () => {
         </div>
       </section>
 
-      {/* Search Section - Mobile Optimized */}
       <section
         className="py-8 bg-white/80 backdrop-blur-sm border-y border-gray-200 px-4 sm:px-6"
         id="search"
@@ -827,9 +806,7 @@ const AlumniHomePage = () => {
               </h2>
             </div>
 
-            {/* Search and Filters */}
             <div className="space-y-4">
-              {/* Search Input */}
               <div className="relative">
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-sm">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -851,7 +828,6 @@ const AlumniHomePage = () => {
                 </button>
               </div>
 
-              {/* Filter Controls */}
               <div className="flex flex-wrap justify-center gap-3">
                 <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-gray-200 shadow-sm">
                   <Filter className="h-4 w-4 text-gray-500" />
@@ -885,7 +861,6 @@ const AlumniHomePage = () => {
         </div>
       </section>
 
-      {/* Featured Institutions - Mobile Optimized */}
       <section
         id="institutions"
         className="py-8 bg-gray-100 px-4 sm:px-6"
@@ -950,110 +925,11 @@ const AlumniHomePage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {sortedInstitutions.map((institution, index) => (
-                <div
+              {sortedInstitutions.map((institution) => (
+                <InstitutionCard
                   key={institution.id}
-                  className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-md overflow-hidden transition-all duration-500 border border-gray-200"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={institution.image}
-                      alt={institution.name}
-                      className="w-full h-40 object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-1 border border-gray-300 shadow-sm">
-                      <span className="text-xs font-bold text-gray-800">
-                        Updated {institution.recentUpdate}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
-                      {institution.name}
-                    </h3>
-
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <MapPin className="h-3 w-3 mr-1 text-gray-500" />
-                      <span className="text-xs font-medium">
-                        {institution.location}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-gray-600 mb-3 leading-relaxed line-clamp-2">
-                      {institution.description}
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>Progress</span>
-                        <span>
-                          ₹{institution.raised.toLocaleString()} of ₹
-                          {institution.totalNeeded.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div
-                          className="bg-gray-800 h-1.5 rounded-full transition-all duration-700"
-                          style={{
-                            width: `${
-                              institution.totalNeeded > 0
-                                ? (institution.raised /
-                                    institution.totalNeeded) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {institution.totalNeeded > 0
-                          ? Math.round(
-                              (institution.raised / institution.totalNeeded) *
-                                100
-                            )
-                          : 0}
-                        % funded
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center text-gray-600">
-                        <Users className="h-3 w-3 mr-1 text-gray-500" />
-                        <span className="text-xs font-medium">
-                          {institution.alumni} alumni
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {institution.needs} active needs
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDonate(institution.id)}
-                        className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-xl hover:bg-gray-700 transition-all duration-300 shadow-sm font-semibold text-sm flex items-center justify-center space-x-1"
-                      >
-                        <Heart className="h-3 w-3" />
-                        <span>Donate</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          navigate(
-                            `/alumni/institute-details/${institution.id}`
-                          )
-                        }
-                        className="px-3 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold text-sm flex items-center justify-center"
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        View
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  institution={institution}
+                />
               ))}
             </div>
           )}

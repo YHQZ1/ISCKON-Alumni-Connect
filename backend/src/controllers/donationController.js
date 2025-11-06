@@ -1,11 +1,5 @@
-// src/controllers/donationController.js
 import supabase from "../../src/config/supabaseClient.js";
 
-/*
-  createDonation:
-  - Protected route (authenticateToken). Uses req.user.id for donor_user_id.
-  - Calls the DB RPC add_donation_and_increment (idempotent when provider_payment_id provided).
-*/
 export async function createDonation(req, res) {
   try {
     const authUser = req.user || null;
@@ -21,10 +15,11 @@ export async function createDonation(req, res) {
       metadata = {},
     } = req.body;
 
-    if (!campaign_id || !amount)
+    if (!campaign_id || !amount) {
       return res
         .status(400)
         .json({ error: "campaign_id and amount are required" });
+    }
 
     const params = {
       p_campaign: campaign_id,
@@ -45,14 +40,11 @@ export async function createDonation(req, res) {
     );
 
     if (error) {
-      console.error("createDonation rpc error", error);
       return res.status(500).json({ error: "Failed to create donation" });
     }
 
-    // supabase.rpc sometimes returns the scalar directly or as an array; normalize
     let donationId = data;
     if (Array.isArray(data)) donationId = data[0];
-    // if data is object with key, handle generically
     if (
       donationId &&
       typeof donationId === "object" &&
@@ -63,20 +55,12 @@ export async function createDonation(req, res) {
 
     return res.status(201).json({ donation_id: donationId, status });
   } catch (err) {
-    console.error("createDonation exception", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
 
-/*
-  webhookHandler:
-  - Public endpoint to be called by payment provider.
-  - IMPORTANT: implement provider signature verification in production.
-  - Idempotent: uses provider_payment_id to find existing donation or calls RPC.
-*/
 export async function webhookHandler(req, res) {
   try {
-    // In production, verify signature here BEFORE trusting payload.
     const {
       provider,
       provider_payment_id,
@@ -88,28 +72,28 @@ export async function webhookHandler(req, res) {
       donor_email = null,
       metadata = {},
     } = req.body;
-    if (!provider || !provider_payment_id || !status)
+
+    if (!provider || !provider_payment_id || !status) {
       return res
         .status(400)
         .json({ error: "provider, provider_payment_id and status required" });
+    }
 
-    // Try find existing donation by provider_payment_id
     const { data: existing, error: fetchErr } = await supabase
       .from("donations")
       .select("*")
       .eq("provider_payment_id", provider_payment_id)
       .maybeSingle();
+
     if (fetchErr) {
-      console.error("webhook fetch err", fetchErr);
       return res.status(500).json({ error: "DB error" });
     }
 
     if (existing) {
-      // If already in desired status -> idempotent OK
-      if (existing.status === status)
+      if (existing.status === status) {
         return res.json({ ok: true, donation_id: existing.id });
+      }
 
-      // Update donation status
       const { data: updated, error: updateErr } = await supabase
         .from("donations")
         .update({ status, metadata })
@@ -118,18 +102,15 @@ export async function webhookHandler(req, res) {
         .maybeSingle();
 
       if (updateErr) {
-        console.error("webhook update err", updateErr);
         return res.status(500).json({ error: "Failed to update donation" });
       }
 
-      // Adjust campaign current_amount if needed
       if (status === "succeeded" && existing.status !== "succeeded") {
         await supabase.rpc("increment_campaign_amount", {
           p_campaign: existing.campaign_id,
           p_amount: existing.amount,
         });
       } else if (existing.status === "succeeded" && status !== "succeeded") {
-        // refund/cancel
         await supabase.rpc("increment_campaign_amount", {
           p_campaign: existing.campaign_id,
           p_amount: -existing.amount,
@@ -139,11 +120,11 @@ export async function webhookHandler(req, res) {
       return res.json({ ok: true, donation_id: existing.id });
     }
 
-    // No existing donation -> create via RPC (requires campaign_id & amount)
-    if (!campaign_id || !amount)
+    if (!campaign_id || !amount) {
       return res
         .status(400)
         .json({ error: "campaign_id and amount required for new donation" });
+    }
 
     const { data: createdId, error: rpcErr } = await supabase.rpc(
       "add_donation_and_increment",
@@ -162,70 +143,41 @@ export async function webhookHandler(req, res) {
     );
 
     if (rpcErr) {
-      console.error("webhook rpc err", rpcErr);
       return res.status(500).json({ error: "Failed to create donation" });
     }
 
     return res.json({ ok: true, donation_id: createdId });
   } catch (err) {
-    console.error("webhook exception", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
 
-// Get user's donation statistics
 export const getMyDonationStats = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("🔍 Fetching donation stats for user:", userId);
-
-    // Get all successful donations for this user - try different status values
     const { data: donations, error } = await supabase
       .from("donations")
       .select(
-        `
-        amount,
-        campaign_id,
-        status,
-        donor_user_id,
-        campaigns (
-          school_id
-        )
-      `
+        "amount, campaign_id, status, donor_user_id, campaigns ( school_id )"
       )
       .eq("donor_user_id", userId)
-      .in("status", ["completed", "success", "succeeded"]); // Try multiple status values
+      .in("status", ["completed", "success", "succeeded"]);
 
     if (error) {
-      console.error("Database error:", error);
       throw error;
     }
 
-    console.log("📊 Found donations:", donations);
-
-    // Calculate stats
     const totalDonated = donations.reduce(
       (sum, donation) => sum + parseFloat(donation.amount),
       0
     );
-
-    // Get unique campaigns supported
     const uniqueCampaigns = [...new Set(donations.map((d) => d.campaign_id))];
     const projectsSupported = uniqueCampaigns.length;
-
-    // Get unique schools helped
     const uniqueSchools = [
       ...new Set(donations.map((d) => d.campaigns?.school_id).filter(Boolean)),
     ];
     const schoolsHelped = uniqueSchools.length;
-
-    console.log("📈 Final stats:", {
-      totalDonated,
-      projectsSupported,
-      schoolsHelped,
-      totalDonations: donations.length,
-    });
 
     res.json({
       totalDonated,
@@ -234,33 +186,19 @@ export const getMyDonationStats = async (req, res) => {
       totalDonations: donations.length,
     });
   } catch (error) {
-    console.error("Error fetching donation stats:", error);
     res.status(500).json({
       error: "Failed to fetch donation statistics",
     });
   }
 };
 
-// Get user's recent donations
 export const getMyRecentDonations = async (req, res) => {
   try {
     const userId = req.user.id;
 
     const { data: donations, error } = await supabase
       .from("donations")
-      .select(
-        `
-        id,
-        amount,
-        created_at,
-        campaigns (
-          title,
-          schools (
-            name
-          )
-        )
-      `
-      )
+      .select("id, amount, created_at, campaigns ( title, schools ( name ) )")
       .eq("donor_user_id", userId)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
@@ -274,14 +212,12 @@ export const getMyRecentDonations = async (req, res) => {
       donations: donations || [],
     });
   } catch (error) {
-    console.error("Error fetching recent donations:", error);
     res.status(500).json({
       error: "Failed to fetch recent donations",
     });
   }
 };
 
-// Get all donations for a specific campaign (for institute dashboard)
 export const getCampaignDonations = async (req, res) => {
   try {
     const { campaignId } = req.params;
@@ -289,19 +225,7 @@ export const getCampaignDonations = async (req, res) => {
     const { data: donations, error } = await supabase
       .from("donations")
       .select(
-        `
-        id,
-        amount,
-        created_at,
-        donor_name,
-        donor_email,
-        status,
-        donor_user_id,
-        users (
-          first_name,
-          last_name
-        )
-      `
+        "id, amount, created_at, donor_name, donor_email, status, donor_user_id, users ( first_name, last_name )"
       )
       .eq("campaign_id", campaignId)
       .eq("status", "completed")
@@ -315,9 +239,33 @@ export const getCampaignDonations = async (req, res) => {
       donations: donations || [],
     });
   } catch (error) {
-    console.error("Error fetching campaign donations:", error);
     res.status(500).json({
       error: "Failed to fetch campaign donations",
     });
+  }
+};
+
+export const getSchoolDonations = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+
+    const { data: donations, error } = await supabase
+      .from("donations")
+      .select(
+        `
+        id, amount, created_at, donor_name, donor_email, status,
+        campaigns!inner ( title, schools!inner ( id ) )
+      `
+      )
+      .eq("campaigns.schools.id", schoolId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    res.json({ donations: donations || [] });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch school donations" });
   }
 };

@@ -58,7 +58,6 @@ const Auth = () => {
 
   const { userType: paramUserType } = useParams();
   const [userType, setUserType] = useState(paramUserType || "alumni");
-
   const [isSignUp, setIsSignUp] = useState(() => {
     return !!paramUserType;
   });
@@ -105,7 +104,6 @@ const Auth = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Basic fields for all signups
     if (!formData.email || formData.email.trim() === "") {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -119,20 +117,17 @@ const Auth = () => {
     }
 
     if (isSignUp) {
-      // Confirm password
       if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
         newErrors.confirmPassword = "Please confirm your password";
       } else if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "Passwords don't match";
       }
 
-      // Common fields for both user types
       if (!formData.phone || formData.phone.trim() === "") {
         newErrors.phone = "Phone number is required";
       }
 
       if (userType === "alumni") {
-        // Alumni specific fields - only the requested ones
         if (!formData.firstName || formData.firstName.trim() === "") {
           newErrors.firstName = "First name is required";
         }
@@ -145,7 +140,6 @@ const Auth = () => {
       }
 
       if (userType === "institution") {
-        // Institution specific fields - ONLY make essential fields required like in working code
         if (
           !formData.institutionName ||
           formData.institutionName.trim() === ""
@@ -156,10 +150,6 @@ const Auth = () => {
           newErrors.city = "City is required";
         }
 
-        // REMOVED: Logo validation (no longer required)
-        // REMOVED: All other institution field validations that were making them required
-
-        // Only validate logo if provided (optional)
         if (formData.logo) {
           if (
             !["image/jpeg", "image/png", "image/jpg"].includes(
@@ -173,7 +163,6 @@ const Auth = () => {
           }
         }
 
-        // Contact email validation only if provided
         if (
           formData.contactEmail &&
           !/\S+@\S+\.\S+/.test(formData.contactEmail)
@@ -182,7 +171,6 @@ const Auth = () => {
         }
       }
 
-      // Terms agreement
       if (!formData.agreeToTerms) {
         newErrors.agreeToTerms = "Please agree to the terms and conditions";
       }
@@ -309,7 +297,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden flex items-center justify-center relative">
-      {/* Background elements - hidden on mobile */}
       <div className="hidden sm:block fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"
@@ -338,7 +325,6 @@ const Auth = () => {
         ></div>
       </div>
 
-      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-50/95 backdrop-blur-xl shadow-sm border-b border-gray-200 transition-all duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16 sm:h-18">
@@ -368,10 +354,8 @@ const Auth = () => {
         </div>
       </nav>
 
-      {/* Main content */}
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-8 sm:pb-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-start">
-          {/* Left side - Hero section */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <div className="inline-flex items-center space-x-2 bg-gray-200 rounded-full px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 shadow-sm mb-6 sm:mb-8 hover:scale-105 transition-transform duration-300">
               <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 animate-pulse" />
@@ -422,7 +406,6 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Right side - Form section */}
           <div className="relative order-1 lg:order-2">
             <div className="absolute inset-0 bg-gray-300/20 rounded-3xl blur-xl opacity-30"></div>
             <div className="relative bg-white backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 p-6 sm:p-8 lg:p-10">

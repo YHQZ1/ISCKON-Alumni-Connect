@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react"; // ADD useEffect import
+/* eslint-disable no-unused-vars */
+import React, { useState, useEffect } from "react";
 import { X, Heart, IndianRupee, Loader } from "lucide-react";
 import axios from "axios";
 
@@ -9,11 +10,10 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
   const [customAmount, setCustomAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cashfreeLoaded, setCashfreeLoaded] = useState(false); // ADD this state
+  const [cashfreeLoaded, setCashfreeLoaded] = useState(false);
 
   const presetAmounts = [100, 500, 1000, 2000, 5000];
 
-  // ADD this useEffect hook
   useEffect(() => {
     if (isOpen && !window.Cashfree) {
       const script = document.createElement('script');
@@ -40,7 +40,6 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
       return;
     }
 
-    // ADD this check
     if (!window.Cashfree) {
       setError("Payment system is loading. Please try again in a moment.");
       return;
@@ -67,14 +66,12 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
       );
 
       if (response.data.success && response.data.paymentSessionId) {
-        // Redirect to CashFree payment page
         redirectToCashFree(response.data.paymentSessionId);
       } else {
         throw new Error("Failed to create payment order");
       }
 
     } catch (err) {
-      console.error("Donation error:", err);
       setError(
         err.response?.data?.error || 
         "Failed to process donation. Please try again."
@@ -85,19 +82,18 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
   };
 
   const redirectToCashFree = (paymentSessionId) => {
-    // ADD null check
     if (!window.Cashfree) {
       setError("Payment system not ready. Please refresh and try again.");
       return;
     }
 
     const cashfree = window.Cashfree({
-      mode: "sandbox" // Change to "production" for live
+      mode: "sandbox"
     });
     
     cashfree.checkout({
       paymentSessionId: paymentSessionId,
-      redirectTarget: "_self" // Opens in same tab
+      redirectTarget: "_self"
     });
   };
 
@@ -114,7 +110,6 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md mx-auto shadow-xl transform transition-all">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
@@ -133,7 +128,6 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
           </button>
         </div>
 
-        {/* Campaign Info */}
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-2">{campaign?.title}</h3>
           <p className="text-sm text-gray-600 line-clamp-2">
@@ -141,13 +135,11 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
           </p>
         </div>
 
-        {/* Amount Selection */}
         <div className="p-4 sm:p-6">
           <label className="block text-sm font-medium text-gray-700 mb-4">
             Select Donation Amount
           </label>
 
-          {/* Preset Amounts */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             {presetAmounts.map((preset) => (
               <button
@@ -164,7 +156,6 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
             ))}
           </div>
 
-          {/* Custom Amount */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Or enter custom amount
@@ -182,14 +173,12 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
-          {/* ADD loading indicator for CashFree SDK */}
           {!window.Cashfree && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
               <p className="text-sm text-blue-600 flex items-center">
@@ -199,7 +188,6 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex gap-3">
             <button
               onClick={handleClose}
@@ -210,7 +198,7 @@ const DonationModal = ({ isOpen, onClose, campaign, school }) => {
             </button>
             <button
               onClick={handleDonate}
-              disabled={loading || !amount || !window.Cashfree} // ADD disabled condition
+              disabled={loading || !amount || !window.Cashfree}
               className="flex-1 py-3 px-4 bg-gray-800 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-semibold flex items-center justify-center space-x-2"
             >
               {loading ? (

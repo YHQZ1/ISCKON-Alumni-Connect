@@ -21,7 +21,7 @@ CREATE TABLE public.campaigns (
 );
 CREATE TABLE public.donations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  campaign_id uuid NOT NULL,
+  campaign_id uuid,
   donor_user_id uuid,
   donor_name text,
   donor_email text,
@@ -36,6 +36,27 @@ CREATE TABLE public.donations (
   CONSTRAINT donations_pkey PRIMARY KEY (id),
   CONSTRAINT donations_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id),
   CONSTRAINT donations_donor_user_id_fkey FOREIGN KEY (donor_user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.payment_orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  order_id text NOT NULL UNIQUE,
+  donation_id uuid,
+  campaign_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  amount numeric NOT NULL CHECK (amount > 0::numeric),
+  currency text DEFAULT 'INR'::text,
+  payment_status text DEFAULT 'pending'::text,
+  payment_gateway text DEFAULT 'cashfree'::text,
+  transaction_id text,
+  payment_method text,
+  gateway_response jsonb,
+  return_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT payment_orders_pkey PRIMARY KEY (id),
+  CONSTRAINT payment_orders_donation_id_fkey FOREIGN KEY (donation_id) REFERENCES public.donations(id),
+  CONSTRAINT payment_orders_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id),
+  CONSTRAINT payment_orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.schools (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -59,6 +80,7 @@ CREATE TABLE public.schools (
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  alumni_count smallint,
   CONSTRAINT schools_pkey PRIMARY KEY (id),
   CONSTRAINT schools_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id)
 );
@@ -73,5 +95,7 @@ CREATE TABLE public.users (
   graduation_year integer,
   institution_name text,
   location text NOT NULL DEFAULT ''::text,
+  is_oauth_user boolean DEFAULT false,
+  oauth_provider text,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );

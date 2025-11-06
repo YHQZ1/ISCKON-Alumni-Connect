@@ -13,7 +13,6 @@ const Unauthorized = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-20 left-10 w-32 h-32 bg-gray-200/30 rounded-full blur-xl animate-pulse"></div>
         <div
@@ -27,7 +26,6 @@ const Unauthorized = () => {
       </div>
 
       <div className="max-w-md w-full text-center relative z-10">
-        {/* Icon */}
         <div className="mb-8">
           <div className="relative inline-block">
             <div className="w-24 h-24 bg-gray-800 rounded-3xl flex items-center justify-center shadow-md mx-auto">
@@ -39,7 +37,6 @@ const Unauthorized = () => {
           </div>
         </div>
 
-        {/* Text Content */}
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           Access Denied
         </h1>
@@ -58,7 +55,6 @@ const Unauthorized = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => navigate(-1)}
@@ -77,7 +73,6 @@ const Unauthorized = () => {
           </button>
         </div>
 
-        {/* Additional Help */}
         <div className="mt-12 pt-8 border-t border-gray-200">
           <p className="text-gray-500 mb-4">Need assistance?</p>
           <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm">

@@ -1,3 +1,6 @@
+/* eslint-disable no-empty */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mic, MicOff, X, Send, Volume2, Trash2 } from "lucide-react";
@@ -23,7 +26,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
   const isStartingRef = useRef(false);
   const restartAttemptsRef = useRef(0);
 
-  // Speech Recognition setup (same as before)
   useEffect(() => {
     const SpeechRecognition =
       typeof window !== "undefined" &&
@@ -31,7 +33,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
     if (!SpeechRecognition) {
       recognitionRef.current = null;
       setStatus("SpeechRecognition not supported. Use Chrome/Edge.");
-      console.warn("[VoiceNugget] SpeechRecognition API not found");
       return;
     }
 
@@ -46,7 +47,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
     restartAttemptsRef.current = 0;
 
     rec.onstart = () => {
-      console.log("[VoiceNugget] rec.onstart");
       setListening(true);
       setStatus("Listening...");
       isStartingRef.current = false;
@@ -64,43 +64,28 @@ export default function VoiceNugget({ userType = "alumni" }) {
         const last = ev.results[ev.results.length - 1];
         if (last.isFinal) {
           const text = last[0].transcript.trim();
-          console.log("[VoiceNugget] final transcript:", text);
           setTranscript(text);
           await sendToBackend(text);
         }
-      } catch (err) {
-        console.error("[VoiceNugget] onresult error", err);
-      }
+      } catch (err) {}
     };
 
     rec.onerror = (e) => {
-      console.error("[VoiceNugget] rec.onerror", e);
       setStatus(`Error: ${e.error || e.message || "speech error"}`);
       setListening(false);
     };
 
     rec.onend = () => {
-      console.log(
-        "[VoiceNugget] rec.onend — wantRecognition=",
-        wantRecognitionRef.current,
-        "restarts=",
-        restartAttemptsRef.current
-      );
       setListening(false);
       isStartingRef.current = false;
 
       if (wantRecognitionRef.current) {
         if (restartAttemptsRef.current < 1) {
           restartAttemptsRef.current += 1;
-          console.log(
-            "[VoiceNugget] auto-restart attempt",
-            restartAttemptsRef.current
-          );
           setTimeout(() => {
             try {
               rec.start();
             } catch (e) {
-              console.warn("[VoiceNugget] auto-restart failed", e);
               wantRecognitionRef.current = false;
               setStatus("Idle");
             }
@@ -109,9 +94,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
         } else {
           wantRecognitionRef.current = false;
           setStatus("Idle");
-          console.warn(
-            "[VoiceNugget] gave up restarting recognition after 1 attempt"
-          );
           return;
         }
       }
@@ -138,7 +120,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
     };
   }, [open]);
 
-  // Backend communication using same pattern as AlumniHomePage
   const sendToBackend = async (text) => {
     try {
       setIsLoading(true);
@@ -149,12 +130,10 @@ export default function VoiceNugget({ userType = "alumni" }) {
         document.querySelector('meta[name="description"]')?.content || "";
       const pageContext = `Path: ${window.location.pathname}. Short desc: ${metaDesc}`;
 
-      // FIX: Make sure we're calling /api/chat
       const url = `${BASE_URL}/api/chat`;
-      console.log("🟡 [Frontend] Making request to:", url);
 
       const response = await axios.post(
-        url, // Use the corrected URL
+        url,
         {
           message: text,
           context: pageContext,
@@ -166,8 +145,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
           },
         }
       );
-
-      console.log("🟢 [Frontend] Response received:", response.data);
 
       const data = response.data;
 
@@ -181,10 +158,7 @@ export default function VoiceNugget({ userType = "alumni" }) {
       }
 
       setStatus("Idle");
-    } catch (error) {
-      console.error("🔴 [Frontend] Backend error details:", error);
-      console.error("🔴 [Frontend] Error response:", error.response?.data);
-      console.error("🔴 [Frontend] Error status:", error.response?.status);
+    } catch {
       setReply("Error contacting server. Please try again.");
       setActions([]);
       setStatus("Idle");
@@ -193,19 +167,14 @@ export default function VoiceNugget({ userType = "alumni" }) {
     }
   };
 
-  // Text fallback using same axios pattern
   const sendTextFallback = async () => {
     if (!transcript || transcript.trim() === "") return;
     await sendToBackend(transcript);
   };
 
-  // Speech functions (same as before)
   async function startListening() {
     wantRecognitionRef.current = true;
     if (isStartingRef.current) {
-      console.log(
-        "[VoiceNugget] start already in progress — ignoring duplicate click"
-      );
       return;
     }
     isStartingRef.current = true;
@@ -233,13 +202,11 @@ export default function VoiceNugget({ userType = "alumni" }) {
       setTimeout(() => {
         try {
           recObj.raw.start();
-        } catch (e) {
-          console.warn("[VoiceNugget] start() error", e);
+        } catch {
           isStartingRef.current = false;
         }
       }, 100);
-    } catch (permErr) {
-      console.error("[VoiceNugget] mic permission denied", permErr);
+    } catch {
       setStatus("Microphone permission denied.");
       isStartingRef.current = false;
       wantRecognitionRef.current = false;
@@ -258,9 +225,7 @@ export default function VoiceNugget({ userType = "alumni" }) {
       if (typeof recObj._markManualStop === "function")
         recObj._markManualStop();
       recObj.raw.stop();
-    } catch (e) {
-      console.warn("[VoiceNugget] recognition.stop() issue", e);
-    }
+    } catch (e) {}
     isStartingRef.current = false;
     setListening(false);
     setStatus("Idle");
@@ -268,7 +233,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
 
   function speak(text) {
     if (!synthRef.current || !("speechSynthesis" in window)) {
-      console.warn("[VoiceNugget] speechSynthesis not available");
       return;
     }
     if (!text || typeof text !== "string" || text.trim() === "") return;
@@ -276,8 +240,8 @@ export default function VoiceNugget({ userType = "alumni" }) {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-IN";
     u.rate = 1;
-    u.onend = () => console.log("[VoiceNugget] TTS ended");
-    u.onerror = (e) => console.error("[VoiceNugget] TTS error", e);
+    u.onend = () => {};
+    u.onerror = (e) => {};
     synthRef.current.speak(u);
   }
 
@@ -293,7 +257,7 @@ export default function VoiceNugget({ userType = "alumni" }) {
     if (action.type === "navigate" && action.url) {
       try {
         navigate(action.url);
-      } catch (e) {
+      } catch {
         window.location.href = action.url;
       }
       setOpen(false);
@@ -302,7 +266,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
 
   return (
     <>
-      {/* Floating Button - Matches AlumniHomePage theme */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setOpen(true)}
@@ -318,11 +281,9 @@ export default function VoiceNugget({ userType = "alumni" }) {
         </button>
       </div>
 
-      {/* Modal Overlay */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            {/* Header - Matches AlumniHomePage theme */}
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -349,7 +310,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Status and Controls */}
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   Status:{" "}
@@ -398,7 +358,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
               </div>
 
-              {/* Transcript Box */}
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <div className="text-xs text-gray-700 font-medium mb-1">
                   You said
@@ -412,7 +371,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
               </div>
 
-              {/* Assistant Response Box */}
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <div className="text-xs text-gray-500 font-medium mb-1">
                   Assistant
@@ -431,7 +389,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
               </div>
 
-              {/* Text Input Fallback */}
               <div className="mt-2">
                 <div className="relative flex">
                   <input
@@ -452,7 +409,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
               </div>
 
-              {/* Actions */}
               {actions && actions.length > 0 && (
                 <div className="flex flex-col gap-2 mt-2">
                   <div className="text-xs text-gray-500 font-medium">
@@ -470,7 +426,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
                 </div>
               )}
 
-              {/* Replay Button */}
               {reply && !isLoading && (
                 <div className="flex justify-end">
                   <button
@@ -483,7 +438,6 @@ export default function VoiceNugget({ userType = "alumni" }) {
               )}
             </div>
 
-            {/* Footer */}
             <div className="bg-gray-50 p-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 text-center">
                 Tip: Speak clearly and keep your questions concise for best

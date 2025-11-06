@@ -1,4 +1,4 @@
-// src/pages/InstituteProfile.jsx
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import {
   Home,
@@ -55,7 +55,6 @@ const InstituteProfile = () => {
     if (id) {
       fetchSchool();
     } else {
-      // Try to get school ID from user data or redirect
       fetchUserSchool();
     }
   }, [id]);
@@ -65,14 +64,12 @@ const InstituteProfile = () => {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
 
-      // First get user info to find their school
       const userResponse = await axios.get(`${BASE_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const userId = userResponse.data.user.id;
 
-      // Get all schools and find the one owned by this user
       const schoolsResponse = await axios.get(`${BASE_URL}/api/schools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -82,15 +79,13 @@ const InstituteProfile = () => {
       );
 
       if (userSchool) {
-        // Redirect to the correct school profile
         navigate(`/institute/profile/${userSchool.id}`, { replace: true });
       } else {
         setMessage(
           "No school found for your account. Please create a school first."
         );
       }
-    } catch (error) {
-      console.error("Error fetching user school:", error);
+    } catch {
       setMessage("Failed to load school profile");
     } finally {
       setIsLoading(false);
@@ -101,28 +96,18 @@ const InstituteProfile = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("jwtToken");
-      console.log("🔄 Fetching school with ID:", id);
-      console.log("🔑 Token available:", !!token);
-      console.log("🌐 Base URL:", BASE_URL);
 
       const response = await axios.get(`${BASE_URL}/api/schools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("✅ Fetch response:", response.data);
-
       if (response.data && response.data.school) {
-        console.log("📥 Received school data:", response.data.school);
         setSchoolData(response.data.school);
         setMessage("");
       } else {
         throw new Error("Invalid response format - no school data");
       }
     } catch (error) {
-      console.error("❌ Error fetching school:", error);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
-
       if (error.response?.status === 404) {
         setMessage(
           "School not found. It may have been deleted or you don't have access."
@@ -145,7 +130,6 @@ const InstituteProfile = () => {
       [name]: value,
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -173,7 +157,6 @@ const InstituteProfile = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Only validate fields that are actually required
     if (!schoolData.name.trim()) newErrors.name = "School name is required";
 
     if (
@@ -182,9 +165,6 @@ const InstituteProfile = () => {
     ) {
       newErrors.contact_email = "Email is invalid";
     }
-
-    // Remove city requirement if it's not actually required
-    // if (!schoolData.city.trim()) newErrors.city = "City is required";
 
     if (
       schoolData.contact_phone &&
@@ -206,7 +186,6 @@ const InstituteProfile = () => {
 
       const formDataToSend = new FormData();
 
-      // Add all the fields to FormData
       formDataToSend.append("display_name", schoolData.display_name || "");
       formDataToSend.append("street", schoolData.street || "");
       formDataToSend.append("city", schoolData.city || "");
@@ -221,7 +200,6 @@ const InstituteProfile = () => {
       formDataToSend.append("website", schoolData.website || "");
       formDataToSend.append("description", schoolData.description || "");
 
-      // Add logo file if selected
       if (formData.logo) {
         formDataToSend.append("logo", formData.logo);
       }
@@ -239,12 +217,11 @@ const InstituteProfile = () => {
 
       if (response.data && response.data.school) {
         setSchoolData(response.data.school);
-        setFormData({ logo: null }); // Reset file input
+        setFormData({ logo: null });
         setIsEditing(false);
         setMessage("School profile updated successfully!");
       }
     } catch (error) {
-      console.error("Error updating school:", error);
       if (error.response?.data?.error) {
         setMessage(`Update failed: ${error.response.data.error}`);
       } else {
@@ -258,7 +235,7 @@ const InstituteProfile = () => {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setErrors({});
-    fetchSchool(); // Reload original data
+    fetchSchool();
   };
 
   const formatDate = (dateString) => {
@@ -284,7 +261,6 @@ const InstituteProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Back Button */}
         <div className="mb-8">
           <button
             onClick={() => navigate("/institute/home")}
@@ -294,7 +270,6 @@ const InstituteProfile = () => {
             <span>Back to Dashboard</span>
           </button>
 
-          {/* Profile Header */}
           <div className="text-center mb-8">
             <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <Building className="h-12 w-12 text-white" />
@@ -320,7 +295,6 @@ const InstituteProfile = () => {
           </div>
         )}
 
-        {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8">
             <div>
@@ -361,7 +335,6 @@ const InstituteProfile = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Name - Read Only */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 School Name
@@ -380,7 +353,6 @@ const InstituteProfile = () => {
               </p>
             </div>
 
-            {/* Display Name and Registration Number */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -415,7 +387,6 @@ const InstituteProfile = () => {
               </div>
             </div>
 
-            {/* Contact Information */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -461,7 +432,6 @@ const InstituteProfile = () => {
               </div>
             </div>
 
-            {/* Phone and Website */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -508,7 +478,6 @@ const InstituteProfile = () => {
               </div>
             </div>
 
-            {/* Address */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Address
@@ -558,7 +527,6 @@ const InstituteProfile = () => {
               )}
             </div>
 
-            {/* Logo and Description */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -622,7 +590,6 @@ const InstituteProfile = () => {
               </div>
             </div>
 
-            {/* Metadata */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -650,7 +617,6 @@ const InstituteProfile = () => {
           </div>
         </div>
 
-        {/* Verification Info - Updated to match your schema */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8 mt-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Institution Status
